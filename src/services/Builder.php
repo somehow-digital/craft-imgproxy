@@ -54,18 +54,17 @@ class Builder extends Component
 			);
 		}
 
-		$position = $transform->position ?? 'center-center';
+		if ($asset->hasFocalPoint) {
+			$focus = $asset->getFocalPoint();
 
-		if ($transform->mode === 'crop') {
-			if ($asset->hasFocalPoint) {
-				$focalPoint = $asset->getFocalPoint();
-				$options[] = new GravityFocusPoint(
-					(float) $focalPoint['x'],
-					(float) $focalPoint['y'],
-				);
-			} else {
-				$options[] = new Gravity(GravityUtility::mapPositionToGravity($position));
-			}
+			$options[] = new GravityFocusPoint(
+				(float) $focus['x'],
+				(float) $focus['y'],
+			);
+		} else if ($transform->position && $transform->position !== 'center-center') {
+			$gravity = GravityUtility::mapPositionToGravity($transform->position);
+
+			$options[] = new Gravity($gravity);
 		}
 
 		if ($transform->fill && str_starts_with($transform->fill, '#')) {
