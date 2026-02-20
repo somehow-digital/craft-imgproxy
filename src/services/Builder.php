@@ -12,6 +12,7 @@ use SomehowDigital\ImgProxy\Masker\EncodingMasker;
 use SomehowDigital\ImgProxy\Option\Background;
 use SomehowDigital\ImgProxy\Option\CacheBuster;
 use SomehowDigital\ImgProxy\Option\Enlarge;
+use SomehowDigital\ImgProxy\Option\Extend;
 use SomehowDigital\ImgProxy\Option\Format;
 use SomehowDigital\ImgProxy\Option\Gravity;
 use SomehowDigital\ImgProxy\Option\GravityFocusPoint;
@@ -36,18 +37,20 @@ class Builder extends Component
 		if ($transform->width || $transform->height) {
 			$resizingType = match ($transform->mode) {
 				'fit' => ResizingTypeEnum::FIT,
-				'letterbox' => ResizingTypeEnum::FORCE,
+				'letterbox' => ResizingTypeEnum::FIT,
 				'stretch' => ResizingTypeEnum::FORCE,
 				default => ResizingTypeEnum::FILL,
 			};
 
 			$enlarge = $transform->upscale ? new Enlarge() : null;
+			$extend = $transform->mode === 'letterbox' ? new Extend() : null;
 
 			$options[] = new Resize(
 				new ResizingType($resizingType),
 				$transform->width ? new Width($transform->width) : null,
 				$transform->height ? new Height($transform->height) : null,
 				$enlarge,
+				$extend
 			);
 		}
 
@@ -65,15 +68,8 @@ class Builder extends Component
 			}
 		}
 
-		if ($transform->mode === 'letterbox') {
-			$options[] = new Gravity(GravityUtility::mapPositionToGravity($position));
-			$fillColor = $transform->fill ?? 'transparent';
-			if ($fillColor === 'transparent') {
-				$options[] = new Background(0, 0, 0, 0);
-			} else {
-				$hex = ltrim($fillColor, '#');
-				$options[] = new Background($hex);
-			}
+		if ($transform->fill && str_starts_with($transform->fill, '#')) {
+			$options[] = new Background(ltrim($transform->fill, '#'));
 		}
 
 		if ($transform->quality) {
