@@ -9,7 +9,6 @@ use craft\models\ImageTransform;
 use SomehowDigital\Craft\ImgProxy\Plugin;
 use SomehowDigital\Craft\ImgProxy\utilities\GravityUtility;
 use SomehowDigital\ImgProxy\Masker\EncodingMasker;
-use SomehowDigital\ImgProxy\Masker\EncryptionMasker;
 use SomehowDigital\ImgProxy\Option\Background;
 use SomehowDigital\ImgProxy\Option\CacheBuster;
 use SomehowDigital\ImgProxy\Option\Enlarge;
@@ -103,11 +102,8 @@ class Builder extends Component
 
 		$signatureKey = App::parseEnv($settings->signatureKey);
 		$signatureSalt = App::parseEnv($settings->signatureSalt);
-		$encryptionKey = App::parseEnv($settings->encryptionKey);
 
-		$masker = $encryptionKey
-			? new EncryptionMasker($encryptionKey)
-			: new EncodingMasker();
+		$masker = new EncodingMasker();
 
 		$signer = ($signatureKey && $signatureSalt)
 			? new Signer($signatureKey, $signatureSalt)
