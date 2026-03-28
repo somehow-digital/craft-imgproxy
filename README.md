@@ -1,4 +1,4 @@
-<img src="./src/icon.svg" width="95" height="70" alt="imgproxy icon">
+<img src="src/icon.svg" width="96" height="96" alt="imgproxy logo" />
 
 # `imgproxy` for Craft CMS
 > Provides an [imgproxy](https://imgproxy.net/) integration for [Craft CMS](https://craftcms.com/).
@@ -32,3 +32,7 @@ composer require somehow-digital/craft-imgproxy
 4. Click **Save**.
 
 > **Tip:** All settings support environment variables. See [Environmental Configuration](https://craftcms.com/docs/5.x/configure.html#env) in the Craft CMS docs to learn more about that.
+
+---
+
+> [somehow digital.](https://somehow.digital)
