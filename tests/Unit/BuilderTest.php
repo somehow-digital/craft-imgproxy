@@ -108,22 +108,21 @@ describe('resize', function () {
 	});
 
 	it('resizes with only a width', function () {
-		expect(urlOptions(imageUrl(['width' => 300, 'upscale' => false])))->toBe(['rs:fill:300']);
+		expect(urlOptions(imageUrl(['width' => 300, 'upscale' => false])))->toBe(['rs:fill:300:0']);
 	});
 
-	// Resize drops empty values, which moves the following ones into the wrong position.
 	it('keeps the position of the height when upscaling with only a width', function () {
 		expect(urlOptions(imageUrl(['width' => 300, 'upscale' => true])))->toBe(['rs:fill:300:0:1']);
-	})->skip('known bug: renders rs:fill:300:1, which is a height of 1');
+	});
 
 	it('keeps the position of the width with only a height', function () {
 		expect(urlOptions(imageUrl(['height' => 200, 'upscale' => false])))->toBe(['rs:fill:0:200']);
-	})->skip('known bug: renders rs:fill:200, which is a width of 200');
+	});
 
 	it('keeps the position of the extend option when letterboxing without upscaling', function () {
 		expect(urlOptions(imageUrl(['mode' => 'letterbox', 'width' => 300, 'height' => 200, 'upscale' => false])))
 			->toBe(['rs:fit:300:200:0:1']);
-	})->skip('known bug: renders rs:fit:300:200:1, which enlarges instead of extends');
+	});
 });
 
 describe('gravity', function () {
