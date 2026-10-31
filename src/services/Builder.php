@@ -61,7 +61,7 @@ class Builder extends Component
 				(float) $focus['x'],
 				(float) $focus['y'],
 			);
-		} else if ($transform->position && $transform->position !== 'center-center') {
+		} elseif ($transform->position !== 'center-center') {
 			$gravity = GravityUtility::mapPositionToGravity($transform->position);
 
 			$options[] = new Gravity($gravity);

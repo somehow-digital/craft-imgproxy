@@ -38,6 +38,11 @@ All settings support environment variables via `EnvAttributeParserBehavior`.
     - `settings/plugin.twig`: The plugin settings page template.
   - `utilities/`: Utility classes, including `GravityUtility.php`.
   - `Plugin.php`: The main plugin class.
+- `tests/`: Contains the Pest test suite.
+  - `Unit/`: Tests for the URL builder, settings and utilities.
+  - `Feature/`: Tests for the plugin's registrations and event handlers.
+  - `Support/`: Test doubles for Craft services and assets.
+  - `TestCase.php`: Boots a fresh Craft app with the plugin for each test, without a database.
 
 ## Entry Points & Initialization
 
@@ -56,6 +61,12 @@ All settings support environment variables via `EnvAttributeParserBehavior`.
 1. Clone the repository into a Craft CMS project's `plugins/` directory.
 2. Run `composer install` in the plugin root.
 3. Install the plugin: `./craft plugin/install imgproxy`.
+
+### Quality Checks
+- `composer test`: Runs the Pest test suite.
+- `composer ecs`: Checks the coding standard (`composer ecs-fix` applies fixes).
+- `composer phpstan`: Runs the static analysis.
+- `composer check`: Runs all of the above, as the `Checks` and `Tests` workflows do.
 
 ## Coding Guidelines
 - Update this document when adding new features or changing existing ones.
