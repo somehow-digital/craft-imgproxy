@@ -15,6 +15,9 @@ use SomehowDigital\Craft\ImgProxy\services\Builder;
 use SomehowDigital\ImgProxy\Utility\Format;
 use yii\base\Event;
 
+/**
+ * @method Settings getSettings()
+ */
 class Plugin extends PluginBase
 {
 	public bool $hasCpSettings = true;
