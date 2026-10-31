@@ -6,8 +6,10 @@ use Craft;
 use craft\base\Model;
 use craft\base\Plugin as PluginBase;
 use craft\elements\Asset;
+use craft\errors\ImageTransformException;
 use craft\events\DefineAssetThumbUrlEvent;
 use craft\events\DefineAssetUrlEvent;
+use craft\helpers\ImageTransforms;
 use craft\models\ImageTransform;
 use craft\services\Assets;
 use SomehowDigital\Craft\ImgProxy\models\Settings;
@@ -80,12 +82,15 @@ class Plugin extends PluginBase
 					return;
 				}
 
-				if (is_string($transform)) {
-					$transform = Craft::$app->getImageTransforms()->getTransformByHandle($transform);
+				try {
+					$transform = ImageTransforms::normalizeTransform($transform);
+				} catch (ImageTransformException) {
+					// Craft raises this itself, unless the asset can't be transformed anyway.
+					return;
 				}
 
-				if (is_array($transform)) {
-					$transform = new ImageTransform($transform);
+				if (!$transform) {
+					return;
 				}
 
 				$event->url = $this->getBuilder()->getUrl($asset, $transform);

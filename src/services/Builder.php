@@ -42,13 +42,16 @@ class Builder extends Component
 				default => ResizingTypeEnum::FILL,
 			};
 
-			$enlarge = $transform->upscale ? new Enlarge() : null;
-			$extend = $transform->mode === 'letterbox' ? new Extend() : null;
+			$letterbox = $transform->mode === 'letterbox';
+
+			// Resize drops empty values, so every value before the last one needs to be set to keep its position.
+			$enlarge = ($transform->upscale || $letterbox) ? new Enlarge((bool) $transform->upscale) : null;
+			$extend = $letterbox ? new Extend() : null;
 
 			$options[] = new Resize(
 				new ResizingType($resizingType),
-				$transform->width ? new Width($transform->width) : null,
-				$transform->height ? new Height($transform->height) : null,
+				new Width($transform->width ?? 0),
+				new Height($transform->height ?? 0),
 				$enlarge,
 				$extend
 			);
