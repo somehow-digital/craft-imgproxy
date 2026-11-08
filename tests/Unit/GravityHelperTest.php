@@ -1,10 +1,12 @@
 <?php
 
-use SomehowDigital\Craft\ImgProxy\utilities\GravityUtility;
+declare(strict_types=1);
+
+use SomehowDigital\Craft\ImgProxy\helpers\GravityHelper;
 use SomehowDigital\ImgProxy\Option\GravityEnum;
 
-it('maps a position to its gravity', function (string $position, GravityEnum $gravity) {
-	expect(GravityUtility::mapPositionToGravity($position))->toBe($gravity);
+it('maps a position to its gravity', function (string $position, GravityEnum $gravity): void {
+	expect(GravityHelper::mapPositionToGravity($position))->toBe($gravity);
 })->with([
 	['top-left', GravityEnum::NORTH_WEST],
 	['top-center', GravityEnum::NORTH],
@@ -17,6 +19,6 @@ it('maps a position to its gravity', function (string $position, GravityEnum $gr
 	['bottom-right', GravityEnum::SOUTH_EAST],
 ]);
 
-it('falls back to the center for an unknown position', function () {
-	expect(GravityUtility::mapPositionToGravity('unknown'))->toBe(GravityEnum::CENTER);
+it('falls back to the center for an unknown position', function (): void {
+	expect(GravityHelper::mapPositionToGravity('unknown'))->toBe(GravityEnum::CENTER);
 });

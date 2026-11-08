@@ -1,10 +1,15 @@
 <?php
 
-namespace SomehowDigital\Craft\ImgProxy\utilities;
+declare(strict_types=1);
+
+namespace SomehowDigital\Craft\ImgProxy\helpers;
 
 use SomehowDigital\ImgProxy\Option\GravityEnum;
 
-class GravityUtility
+/**
+ * @internal
+ */
+final class GravityHelper
 {
 	public static function mapPositionToGravity(string $position): GravityEnum
 	{

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace SomehowDigital\Craft\ImgProxy\Tests;
 
 use Craft;
@@ -11,6 +13,7 @@ use SomehowDigital\Craft\ImgProxy\models\Settings;
 use SomehowDigital\Craft\ImgProxy\Plugin;
 use SomehowDigital\Craft\ImgProxy\Tests\Support\Asset;
 use SomehowDigital\Craft\ImgProxy\Tests\Support\Plugins;
+use SomehowDigital\Craft\ImgProxy\Tests\Support\WarningException;
 use yii\base\Event;
 use yii\caching\ArrayCache;
 use yii\di\Container;
@@ -27,6 +30,22 @@ abstract class TestCase extends BaseTestCase
 	{
 		parent::setUp();
 
+		$previous = set_error_handler(null);
+		restore_error_handler();
+		set_error_handler(static function (int $level, string $message, string $file = '', int $line = 0) use ($previous): bool {
+			// Craft's Twig nodes aren't `yield`-ready; not ours to fix.
+			if (str_contains($message, 'YieldReady') && str_contains($message, 'craft\\web\\twig\\nodes\\')) {
+				return true;
+			}
+
+			// Fail on warnings everywhere, including mutants, which PHPUnit doesn't treat as plugin code.
+			if (($level & (E_WARNING | E_USER_WARNING)) !== 0 && (error_reporting() & $level) !== 0) {
+				throw new WarningException($message, 0, $level, $file, $line);
+			}
+
+			return $previous !== null && (bool) $previous($level, $message, $file, $line);
+		}, E_USER_DEPRECATED | E_WARNING | E_USER_WARNING);
+
 		Craft::$container = new Container();
 
 		$this->createApp();
@@ -39,8 +58,11 @@ abstract class TestCase extends BaseTestCase
 		}
 
 		Event::offAll();
+		// @phpstan-ignore assign.propertyType (Yii types the app as always set)
 		Craft::$app = null;
 		Craft::$container = new Container();
+
+		restore_error_handler();
 
 		parent::tearDown();
 	}
@@ -53,12 +75,13 @@ abstract class TestCase extends BaseTestCase
 		$configService->appType = 'web';
 		$configService->env = 'test';
 		$configService->configDir = Craft::getAlias('@config');
-		$configService->appDefaultsDir = "$src/config/defaults";
+		$configService->appDefaultsDir = "{$src}/config/defaults";
 
+		/** @var array{class:class-string<Application>} $config */
 		$config = ArrayHelper::merge(
 			['vendorPath' => CRAFT_VENDOR_PATH, 'env' => 'test', 'components' => ['config' => $configService]],
-			require "$src/config/app.php",
-			require "$src/config/app.web.php",
+			require "{$src}/config/app.php",
+			require "{$src}/config/app.web.php",
 			[
 				'isInstalled' => false,
 				'components' => [
@@ -69,7 +92,6 @@ abstract class TestCase extends BaseTestCase
 			],
 		);
 
-		/** @var Application $app */
 		$app = Craft::createObject($config);
 
 		// Tests run on the command line, which requests take for console requests.
@@ -83,9 +105,12 @@ abstract class TestCase extends BaseTestCase
 	protected function createPlugin(): Plugin
 	{
 		/** @var Plugin $plugin */
+		// @phpstan-ignore argument.type (Craft's stub only knows the `class` key)
 		$plugin = Craft::createObject([
 			'class' => Plugin::class,
 			'basePath' => dirname(__DIR__) . '/src',
+			// Like Craft, merges the plugin's config.
+			...Plugin::config(),
 		], ['imgproxy', Craft::$app]);
 
 		Plugin::setInstance($plugin);
@@ -107,22 +132,18 @@ abstract class TestCase extends BaseTestCase
 	 */
 	protected function asset(array $config = []): Asset
 	{
-		return new Asset([
-			'filename' => 'image.jpg',
-			'kind' => Asset::KIND_IMAGE,
-			...$config,
-		]);
+		return Asset::image($config);
 	}
 
 	/**
 	 * Configures the plugin.
 	 *
-	 * @param array<string,mixed> $values
+	 * @param array<mixed> $values
 	 */
 	protected function settings(array $values): void
 	{
 		/** @var Settings $settings */
-		$settings = Plugin::getInstance()->getSettings();
+		$settings = Plugin::instance()->getSettings();
 		$settings->setAttributes($values, false);
 	}
 
