@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace SomehowDigital\Craft\ImgProxy\Tests\Support;
 
 use craft\base\PluginInterface;

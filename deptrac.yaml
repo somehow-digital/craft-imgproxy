@@ -1,0 +1,105 @@
+# The plugin's layers and which of them each may depend on.
+#
+# A layer is a plugin namespace (as Craft's generator lays them out), or a part of the framework or a package that only
+# some layers may reach. Unlisted framework and package code is open to every layer. `deptrac debug:unassigned` fails
+# for plugin classes outside any layer. Class rules (base classes, naming) live in tests/PHPStan/ArchitectureRules.php.
+#
+# Dependencies point inwards and never back, except that the services reach the plugin's settings through the plugin, as
+# Craft does with `Plugin::getInstance()`. Deptrac can't see service locator calls such as `Craft::$app->getConfig()`.
+#
+#   Plugin           the composition root, registering components and event handlers
+#   Application
+#     Services       components that hold the logic                  services
+#   Domain
+#     Models         settings                                        models
+#   Leaves
+#     Helpers        stateless static helpers                        helpers
+
+parameters:
+  plugin: 'SomehowDigital\\Craft\\ImgProxy'
+
+deptrac:
+  paths:
+    - ./src
+
+  analyser:
+    types:
+      - class
+      - class_superglobal
+      - function
+      - function_call
+      - function_superglobal
+      - use
+
+  layers:
+    - name: Plugin
+      collectors:
+        - type: classNameRegex
+          value: '#^%plugin%\\Plugin$#'
+
+    - name: Services
+      collectors:
+        - type: classNameRegex
+          value: '#^%plugin%\\services\\#'
+
+    - name: Models
+      collectors:
+        - type: classNameRegex
+          value: '#^%plugin%\\models\\#'
+
+    - name: Helpers
+      collectors:
+        - type: classNameRegex
+          value: '#^%plugin%\\helpers\\#'
+
+    # Not shipped, so no layer depends on them.
+    - name: Tests
+      collectors:
+        - type: classNameRegex
+          value: '#^%plugin%\\Tests\\#'
+
+    # Builds the URLs, which only the services and the helpers mapping to it know.
+    - name: ImgProxySdk
+      collectors:
+        - type: classNameRegex
+          value: '#^SomehowDigital\\ImgProxy\\#'
+
+    # Only the plugin registers class-level handlers, so they're all in one place.
+    - name: YiiEvent
+      collectors:
+        - type: classNameRegex
+          value: '#^yii\\base\\Event$#'
+
+    # The plugin's environment, out of reach of the domain.
+    - name: CraftServices
+      collectors:
+        - type: classNameRegex
+          value: '#^craft\\services\\#'
+
+    # Craft wraps these, so no layer reads them.
+    - name: Superglobals
+      collectors:
+        - type: superglobal
+          value:
+            - _COOKIE
+            - _ENV
+            - _FILES
+            - _GET
+            - _POST
+            - _REQUEST
+            - _SERVER
+            - _SESSION
+            - GLOBALS
+
+  ruleset:
+    # Registers everything, and listens to the events of Craft, using the SDK to tell the assets it can transform.
+    Plugin: [Services, Models, Helpers, ImgProxySdk, YiiEvent, CraftServices]
+
+    # Services get their settings through the plugin.
+    Services: [Plugin, Models, Helpers, ImgProxySdk]
+
+    # The domain depends only on itself and the leaves.
+    Models: ~
+
+    # Leaves depend on nothing but the SDK they map to.
+    Helpers: [ImgProxySdk]

@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace SomehowDigital\Craft\ImgProxy;
 
 use Craft;
-use craft\base\Model;
 use craft\base\Plugin as PluginBase;
 use craft\elements\Asset;
 use craft\errors\ImageTransformException;
@@ -13,38 +14,61 @@ use craft\helpers\ImageTransforms;
 use craft\models\ImageTransform;
 use craft\services\Assets;
 use SomehowDigital\Craft\ImgProxy\models\Settings;
-use SomehowDigital\Craft\ImgProxy\services\Builder;
+use SomehowDigital\Craft\ImgProxy\services\BuilderService;
 use SomehowDigital\ImgProxy\Utility\Format;
 use yii\base\Event;
+use yii\base\InvalidConfigException;
 
 /**
+ * Registers the builder and replaces the URLs of assets, and their thumbnails, with imgproxy URLs.
+ *
  * @method Settings getSettings()
  */
-class Plugin extends PluginBase
+final class Plugin extends PluginBase
 {
 	public bool $hasCpSettings = true;
+
+	/**
+	 * @return array{components:array<string,array{class:class-string}>}
+	 */
+	public static function config(): array
+	{
+		return [
+			'components' => [
+				'builder' => ['class' => BuilderService::class],
+			],
+		];
+	}
+
+	/**
+	 * @throws InvalidConfigException when the plugin is not loaded.
+	 */
+	public static function instance(): self
+	{
+		return self::getInstance() ?? throw new InvalidConfigException('The imgproxy plugin is not loaded.');
+	}
 
 	public function init(): void
 	{
 		parent::init();
 
 		$this->registerAliases();
-		$this->registerComponents();
 		$this->registerAssetHandler();
 		$this->registerThumbnailHandler();
 	}
 
-	public function getBuilder(): Builder
+	public function getBuilder(): BuilderService
 	{
+		/** @var BuilderService */
 		return $this->get('builder');
 	}
 
-	protected function createSettingsModel(): ?Model
+	protected function createSettingsModel(): Settings
 	{
 		return new Settings();
 	}
 
-	protected function settingsHtml(): ?string
+	protected function settingsHtml(): string
 	{
 		return Craft::$app->getView()->renderTemplate(
 			'imgproxy/settings/plugin',
@@ -57,39 +81,29 @@ class Plugin extends PluginBase
 		Craft::setAlias('@imgproxy', $this->getBasePath());
 	}
 
-	private function registerComponents(): void
-	{
-		$this->setComponents([
-			'builder' => [
-				'class' => Builder::class,
-			],
-		]);
-	}
-
 	private function registerAssetHandler(): void
 	{
 		Event::on(
 			Asset::class,
 			Asset::EVENT_BEFORE_DEFINE_URL,
-			function (DefineAssetUrlEvent $event) {
-				$transform = $event->transform;
+			function (DefineAssetUrlEvent $event): void {
 				$asset = $event->sender;
 
 				if (
-					!$transform ||
-					!Format::supports($asset->getExtension())
+					!$asset instanceof Asset
+					|| !Format::supports($asset->getExtension())
 				) {
 					return;
 				}
 
 				try {
-					$transform = ImageTransforms::normalizeTransform($transform);
+					$transform = ImageTransforms::normalizeTransform($event->transform);
 				} catch (ImageTransformException) {
 					// Craft raises this itself, unless the asset can't be transformed anyway.
 					return;
 				}
 
-				if (!$transform) {
+				if (!$transform instanceof ImageTransform) {
 					return;
 				}
 
@@ -103,7 +117,7 @@ class Plugin extends PluginBase
 		Event::on(
 			Assets::class,
 			Assets::EVENT_DEFINE_THUMB_URL,
-			function (DefineAssetThumbUrlEvent $event) {
+			function (DefineAssetThumbUrlEvent $event): void {
 				if (!Format::supports($event->asset->getExtension())) {
 					return;
 				}

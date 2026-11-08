@@ -1,0 +1,49 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SomehowDigital\Craft\ImgProxy\Tests\PHPStan;
+
+use Pest\Expectation;
+use Pest\Mixins\Expectation as ExpectationMixin;
+use PhpParser\Node\Expr\MethodCall;
+use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\MethodReflection;
+use PHPStan\Reflection\ParametersAcceptorSelector;
+use PHPStan\Type\DynamicMethodReturnTypeExtension;
+use PHPStan\Type\Generic\GenericObjectType;
+use PHPStan\Type\Type;
+
+/**
+ * Types chained Pest expectations as expectations rather than the mixin, so `not` and others stay known.
+ */
+final readonly class PestExpectationReturnTypeExtension implements DynamicMethodReturnTypeExtension
+{
+	/**
+	 * @param class-string $class
+	 */
+	public function __construct(
+		private string $class,
+	) {}
+
+	public function getClass(): string
+	{
+		return $this->class;
+	}
+
+	public function isMethodSupported(MethodReflection $methodReflection): bool
+	{
+		return $methodReflection->getDeclaringClass()->getName() === ExpectationMixin::class;
+	}
+
+	public function getTypeFromMethodCall(MethodReflection $methodReflection, MethodCall $methodCall, Scope $scope): ?Type
+	{
+		$type = ParametersAcceptorSelector::selectFromArgs($scope, $methodCall->getArgs(), $methodReflection->getVariants())->getReturnType();
+
+		if ($type->getObjectClassNames() !== [ExpectationMixin::class]) {
+			return null;
+		}
+
+		return new GenericObjectType(Expectation::class, [$type->getTemplateType(ExpectationMixin::class, 'TValue')]);
+	}
+}

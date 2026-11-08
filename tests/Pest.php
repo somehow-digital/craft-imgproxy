@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use SomehowDigital\Craft\ImgProxy\Tests\TestCase;
 
 pest()->extend(TestCase::class)->in('Unit', 'Feature');
@@ -7,9 +9,9 @@ pest()->extend(TestCase::class)->in('Unit', 'Feature');
 /**
  * The processing options of an imgproxy URL.
  *
- * @return string[]
+ * @return list<string>
  */
-function urlOptions(string $url): array
+function urlOptions(?string $url): array
 {
 	return array_slice(urlSegments($url), 1, -1);
 }
@@ -17,7 +19,7 @@ function urlOptions(string $url): array
 /**
  * The signature of an imgproxy URL.
  */
-function urlSignature(string $url): string
+function urlSignature(?string $url): string
 {
 	return urlSegments($url)[0];
 }
@@ -25,17 +27,19 @@ function urlSignature(string $url): string
 /**
  * The source URL of an imgproxy URL.
  */
-function urlSource(string $url): string
+function urlSource(?string $url): string
 {
 	$segments = urlSegments($url);
 
-	return (string) base64_decode(strtr(end($segments), '-_', '+/'));
+	$source = base64_decode(strtr((string) end($segments), '-_', '+/'), true);
+
+	return $source === false ? '' : $source;
 }
 
 /**
  * The path of an imgproxy URL, which is what gets signed, without the signature.
  */
-function urlPath(string $url): string
+function urlPath(?string $url): string
 {
 	return implode('/', array_slice(urlSegments($url), 1));
 }
@@ -43,9 +47,13 @@ function urlPath(string $url): string
 /**
  * The segments of the path of an imgproxy URL.
  *
- * @return string[]
+ * @return list<string>
  */
-function urlSegments(string $url): array
+function urlSegments(?string $url): array
 {
+	if ($url === null) {
+		throw new LogicException('The asset has no URL.');
+	}
+
 	return explode('/', ltrim((string) parse_url($url, PHP_URL_PATH), '/'));
 }
