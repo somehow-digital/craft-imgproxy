@@ -8,6 +8,8 @@ use Craft;
 use craft\elements\Asset;
 use craft\helpers\App;
 use craft\helpers\Assets;
+use craft\helpers\Image;
+use craft\helpers\ImageTransforms;
 use craft\models\ImageTransform;
 use DateTime;
 use SomehowDigital\Craft\ImgProxy\helpers\GravityHelper;
@@ -45,7 +47,7 @@ final class BuilderService extends Component
 			$this->gravity($asset, $transform),
 			$this->background($transform),
 			$this->quality($transform),
-			$this->format($transform),
+			$this->format($asset, $transform),
 			$this->cacheBuster($asset),
 		], static fn(?OptionInterface $option): bool => $option instanceof OptionInterface);
 
@@ -109,9 +111,16 @@ final class BuilderService extends Component
 		return new Quality($transform->quality ?? Craft::$app->getConfig()->getGeneral()->defaultImageQuality);
 	}
 
-	private function format(ImageTransform $transform): ?Format
+	private function format(Asset $asset, ImageTransform $transform): ?Format
 	{
-		return $transform->format !== null ? new Format($transform->format) : null;
+		if ($transform->format !== null) {
+			return new Format($transform->format);
+		}
+
+		// imgproxy keeps the source format, while Craft converts sources that browsers can't display.
+		return Image::isWebSafe($asset->getExtension())
+			? null
+			: new Format(ImageTransforms::detectTransformFormat($asset));
 	}
 
 	private function cacheBuster(Asset $asset): ?CacheBuster
