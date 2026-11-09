@@ -92,7 +92,7 @@ final class Plugin extends PluginBase
 				if (
 					!$this->getSettings()->isConfigured()
 					|| !$asset instanceof Asset
-					|| !$this->isFetchable($asset)
+					|| !$this->isSupported($asset)
 				) {
 					return;
 				}
@@ -100,7 +100,6 @@ final class Plugin extends PluginBase
 				try {
 					$transform = ImageTransforms::normalizeTransform($event->transform);
 				} catch (ImageTransformException) {
-					// Craft raises this itself, unless the asset can't be transformed anyway.
 					return;
 				}
 
@@ -121,7 +120,7 @@ final class Plugin extends PluginBase
 			function (DefineAssetThumbUrlEvent $event): void {
 				if (
 					!$this->getSettings()->isConfigured()
-					|| !$this->isFetchable($event->asset)
+					|| !$this->isSupported($event->asset)
 				) {
 					return;
 				}
@@ -137,12 +136,10 @@ final class Plugin extends PluginBase
 		);
 	}
 
-	/**
-	 * Whether imgproxy can fetch the asset, which needs a supported format and a public absolute URL.
-	 */
-	private function isFetchable(Asset $asset): bool
+	private function isSupported(Asset $asset): bool
 	{
-		return Format::supports($asset->getExtension())
+		return $asset->kind === Asset::KIND_IMAGE
+			&& Format::supports($asset->getExtension())
 			&& preg_match('#^https?://#i', (string) $asset->getVolume()->getRootUrl()) === 1;
 	}
 }
