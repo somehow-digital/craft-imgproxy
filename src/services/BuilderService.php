@@ -6,7 +6,6 @@ namespace SomehowDigital\Craft\ImgProxy\services;
 
 use Craft;
 use craft\elements\Asset;
-use craft\helpers\App;
 use craft\helpers\Assets;
 use craft\helpers\Image;
 use craft\models\ImageTransform;
@@ -165,8 +164,8 @@ final class BuilderService extends Component
 	{
 		$settings = Plugin::instance()->getSettings();
 
-		$signatureKey = $this->parse($settings->signatureKey);
-		$signatureSalt = $this->parse($settings->signatureSalt);
+		$signatureKey = $settings->getSignatureKey();
+		$signatureSalt = $settings->getSignatureSalt();
 
 		$signer = ($signatureKey !== '' && $signatureSalt !== '')
 			? new Signer($signatureKey, $signatureSalt)
@@ -177,16 +176,6 @@ final class BuilderService extends Component
 
 	private function build(string $path): string
 	{
-		return rtrim($this->parse(Plugin::instance()->getSettings()->endpoint), '/') . '/' . $path;
-	}
-
-	/**
-	 * Resolves environment variables and aliases, and returns an empty string for anything but a string.
-	 */
-	private function parse(?string $value): string
-	{
-		$parsed = App::parseEnv($value);
-
-		return is_string($parsed) ? $parsed : '';
+		return rtrim(Plugin::instance()->getSettings()->getEndpoint(), '/') . '/' . $path;
 	}
 }
