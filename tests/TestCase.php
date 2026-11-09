@@ -122,6 +122,9 @@ abstract class TestCase extends BaseTestCase
 
 		$this->settings(['endpoint' => 'https://imgproxy.example.test']);
 
+		// Distinct from Craft's default, to prove the configured value is read.
+		Craft::$app->getConfig()->getGeneral()->defaultImageQuality = 70;
+
 		return $plugin;
 	}
 

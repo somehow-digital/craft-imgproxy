@@ -88,12 +88,12 @@ describe('signature', function (): void {
 
 describe('resize', function (): void {
 	it('has no resize option without dimensions', function (): void {
-		expect(urlOptions(imageUrl()))->toBe([]);
+		expect(urlOptions(imageUrl()))->toBe(['q:70']);
 	});
 
 	it('maps the mode to a resizing type', function (string $mode, string $type): void {
 		expect(urlOptions(imageUrl(['mode' => $mode, 'width' => 300, 'height' => 200, 'upscale' => false])))
-			->toBe(["rs:{$type}:300:200"]);
+			->toBe(["rs:{$type}:300:200", 'q:70']);
 	})->with([
 		['crop', 'fill'],
 		['fit', 'fit'],
@@ -102,81 +102,82 @@ describe('resize', function (): void {
 
 	it('enlarges images when upscaling', function (): void {
 		expect(urlOptions(imageUrl(['width' => 300, 'height' => 200, 'upscale' => true])))
-			->toBe(['rs:fill:300:200:1']);
+			->toBe(['rs:fill:300:200:1', 'q:70']);
 	});
 
 	it('fits and extends images for letterboxing', function (): void {
 		expect(urlOptions(imageUrl(['mode' => 'letterbox', 'width' => 300, 'height' => 200, 'upscale' => true])))
-			->toBe(['rs:fit:300:200:1:1']);
+			->toBe(['rs:fit:300:200:1:1', 'q:70']);
 	});
 
 	it('resizes with only a width', function (): void {
-		expect(urlOptions(imageUrl(['width' => 300, 'upscale' => false])))->toBe(['rs:fill:300:0']);
+		expect(urlOptions(imageUrl(['width' => 300, 'upscale' => false])))->toBe(['rs:fill:300:0', 'q:70']);
 	});
 
 	it('keeps the position of the height when upscaling with only a width', function (): void {
-		expect(urlOptions(imageUrl(['width' => 300, 'upscale' => true])))->toBe(['rs:fill:300:0:1']);
+		expect(urlOptions(imageUrl(['width' => 300, 'upscale' => true])))->toBe(['rs:fill:300:0:1', 'q:70']);
 	});
 
 	it('keeps the position of the width with only a height', function (): void {
-		expect(urlOptions(imageUrl(['height' => 200, 'upscale' => false])))->toBe(['rs:fill:0:200']);
+		expect(urlOptions(imageUrl(['height' => 200, 'upscale' => false])))->toBe(['rs:fill:0:200', 'q:70']);
 	});
 
 	it('keeps the position of the extend option when letterboxing without upscaling', function (): void {
 		expect(urlOptions(imageUrl(['mode' => 'letterbox', 'width' => 300, 'height' => 200, 'upscale' => false])))
-			->toBe(['rs:fit:300:200:0:1']);
+			->toBe(['rs:fit:300:200:0:1', 'q:70']);
 	});
 });
 
 describe('gravity', function (): void {
 	it('maps the position to a gravity', function (): void {
-		expect(urlOptions(imageUrl(['position' => 'top-left'])))->toBe(['g:nowe']);
+		expect(urlOptions(imageUrl(['position' => 'top-left'])))->toBe(['g:nowe', 'q:70']);
 	});
 
 	it('has no gravity for the center', function (): void {
-		expect(urlOptions(imageUrl(['position' => 'center-center'])))->toBe([]);
+		expect(urlOptions(imageUrl(['position' => 'center-center'])))->toBe(['q:70']);
 	});
 
 	it('uses the focal point of the asset', function (): void {
-		expect(urlOptions(imageUrl(asset: ['focalPoint' => ['x' => 0.25, 'y' => 0.75]])))->toBe(['g:fp:0.25:0.75']);
+		expect(urlOptions(imageUrl(asset: ['focalPoint' => ['x' => 0.25, 'y' => 0.75]])))->toBe(['g:fp:0.25:0.75', 'q:70']);
 	});
 
 	it('prefers the focal point of the asset over the position', function (): void {
 		$url = imageUrl(['position' => 'top-left'], ['focalPoint' => ['x' => 0.25, 'y' => 0.75]]);
 
-		expect(urlOptions($url))->toBe(['g:fp:0.25:0.75']);
+		expect(urlOptions($url))->toBe(['g:fp:0.25:0.75', 'q:70']);
 	});
 });
 
 describe('options', function (): void {
 	it('maps a hexadecimal fill color to a background', function (): void {
-		expect(urlOptions(imageUrl(['fill' => '#ff0000'])))->toBe(['bg:ff0000']);
+		expect(urlOptions(imageUrl(['fill' => '#ff0000'])))->toBe(['bg:ff0000', 'q:70']);
 	});
 
 	it('has no background for other fill colors', function (): void {
-		expect(urlOptions(imageUrl(['fill' => 'transparent'])))->toBe([]);
+		expect(urlOptions(imageUrl(['fill' => 'transparent'])))->toBe(['q:70']);
 	});
 
-	it('maps the quality', function (int $quality, array $options): void {
+	it('maps the quality', function (?int $quality, array $options): void {
 		expect(urlOptions(imageUrl(['quality' => $quality])))->toBe($options);
 	})->with([
 		'lowest' => [1, ['q:1']],
 		'highest' => [100, ['q:100']],
-		'none' => [0, []],
+		'zero falls back to the default (the model drops it)' => [0, ['q:70']],
+		'null falls back to the default' => [null, ['q:70']],
 	]);
 
 	it('maps the format', function (): void {
-		expect(urlOptions(imageUrl(['format' => 'webp'])))->toBe(['f:webp']);
+		expect(urlOptions(imageUrl(['format' => 'webp'])))->toBe(['q:70', 'f:webp']);
 	});
 
 	it('leaves out an empty format', function (): void {
-		expect(urlOptions(imageUrl(['format' => ''])))->toBe([]);
+		expect(urlOptions(imageUrl(['format' => ''])))->toBe(['q:70']);
 	});
 
 	it('busts the cache with the date of the last modification', function (): void {
 		$url = imageUrl(asset: ['dateModified' => new DateTime('2026-01-01 00:00:00')]);
 
-		expect(urlOptions($url))->toBe(['cb:1767225600']);
+		expect(urlOptions($url))->toBe(['q:70', 'cb:1767225600']);
 	});
 
 	it('combines options', function (): void {

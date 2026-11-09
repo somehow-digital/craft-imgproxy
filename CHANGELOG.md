@@ -15,6 +15,7 @@
 - The `GravityUtility` class is now `GravityHelper`, and is internal.
 - `Settings::defineRules()` is protected, like in Craft's `Model`.
 - The components are declared in `Plugin::config()`.
+- Transforms without a quality use Craft's `defaultImageQuality`, instead of the imgproxy default.
 
 ### Fixed
 
