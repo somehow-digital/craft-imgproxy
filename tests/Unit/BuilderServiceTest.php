@@ -73,7 +73,7 @@ describe('signature', function (): void {
 		$this->settings(['signatureKey' => $key, 'signatureSalt' => $salt]);
 
 		$url = imageUrl(['width' => 300, 'height' => 200]);
-		$digest = hash_hmac('sha256', 'salt' . urlPath($url), 'secret', true);
+		$digest = hash_hmac('sha256', 'salt/' . urlPath($url), 'secret', true);
 
 		expect(urlSignature($url))->toBe(rtrim(strtr(base64_encode($digest), '+/', '-_'), '='));
 	});
