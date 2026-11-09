@@ -7,15 +7,11 @@ namespace SomehowDigital\Craft\ImgProxy;
 use Craft;
 use craft\base\Plugin as PluginBase;
 use craft\elements\Asset;
-use craft\errors\ImageTransformException;
 use craft\events\DefineAssetThumbUrlEvent;
 use craft\events\DefineAssetUrlEvent;
-use craft\helpers\ImageTransforms;
-use craft\models\ImageTransform;
 use craft\services\Assets;
 use SomehowDigital\Craft\ImgProxy\models\Settings;
 use SomehowDigital\Craft\ImgProxy\services\BuilderService;
-use SomehowDigital\ImgProxy\Utility\Format;
 use yii\base\Event;
 use yii\base\InvalidConfigException;
 
@@ -87,27 +83,13 @@ final class Plugin extends PluginBase
 			Asset::class,
 			Asset::EVENT_BEFORE_DEFINE_URL,
 			function (DefineAssetUrlEvent $event): void {
-				$asset = $event->sender;
+				$url = $event->sender instanceof Asset
+					? $this->getBuilder()->getAssetUrl($event->sender, $event->transform)
+					: null;
 
-				if (
-					!$this->getSettings()->isConfigured()
-					|| !$asset instanceof Asset
-					|| !$this->isSupported($asset)
-				) {
-					return;
+				if ($url !== null) {
+					$event->url = $url;
 				}
-
-				try {
-					$transform = ImageTransforms::normalizeTransform($event->transform);
-				} catch (ImageTransformException) {
-					return;
-				}
-
-				if (!$transform instanceof ImageTransform) {
-					return;
-				}
-
-				$event->url = $this->getBuilder()->getUrl($asset, $transform);
 			}
 		);
 	}
@@ -118,29 +100,12 @@ final class Plugin extends PluginBase
 			Assets::class,
 			Assets::EVENT_DEFINE_THUMB_URL,
 			function (DefineAssetThumbUrlEvent $event): void {
-				if (
-					!$this->getSettings()->isConfigured()
-					|| !$this->getSettings()->isThumbnailsEnabled()
-					|| !$this->isSupported($event->asset)
-				) {
-					return;
+				$url = $this->getBuilder()->getThumbnailUrl($event->asset, $event->width, $event->height);
+
+				if ($url !== null) {
+					$event->url = $url;
 				}
-
-				$transform = new ImageTransform([
-					'width' => $event->width,
-					'height' => $event->height,
-					'format' => $this->getSettings()->getThumbnailFormat(),
-				]);
-
-				$event->url = $this->getBuilder()->getUrl($event->asset, $transform);
 			}
 		);
-	}
-
-	private function isSupported(Asset $asset): bool
-	{
-		return $asset->kind === Asset::KIND_IMAGE
-			&& Format::supports($asset->getExtension())
-			&& preg_match('#^https?://#i', (string) $asset->getVolume()->getRootUrl()) === 1;
 	}
 }
