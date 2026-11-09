@@ -92,7 +92,7 @@ final class Plugin extends PluginBase
 				if (
 					!$this->getSettings()->isConfigured()
 					|| !$asset instanceof Asset
-					|| !Format::supports($asset->getExtension())
+					|| !$this->isFetchable($asset)
 				) {
 					return;
 				}
@@ -121,7 +121,7 @@ final class Plugin extends PluginBase
 			function (DefineAssetThumbUrlEvent $event): void {
 				if (
 					!$this->getSettings()->isConfigured()
-					|| !Format::supports($event->asset->getExtension())
+					|| !$this->isFetchable($event->asset)
 				) {
 					return;
 				}
@@ -135,5 +135,14 @@ final class Plugin extends PluginBase
 				$event->url = $this->getBuilder()->getUrl($event->asset, $transform);
 			}
 		);
+	}
+
+	/**
+	 * Whether imgproxy can fetch the asset, which needs a supported format and a public absolute URL.
+	 */
+	private function isFetchable(Asset $asset): bool
+	{
+		return Format::supports($asset->getExtension())
+			&& preg_match('#^https?://#i', (string) $asset->getVolume()->getRootUrl()) === 1;
 	}
 }

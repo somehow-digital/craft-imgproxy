@@ -22,6 +22,7 @@
 - An invalid signature, an empty endpoint or a signature with only a key or a salt no longer fail requests or produce broken URLs. The plugin leaves the URLs to Craft instead.
 - Sources browsers can't display, such as HEIC and TIFF, are converted to JPEG when the transform has no format, like Craft does. Before, imgproxy kept the source format.
 - Signed URLs are signed including the leading slash of their path, as imgproxy expects. Before, imgproxy rejected them.
+- Assets in volumes without public URLs, or with a relative base URL, are left to Craft. Before, the plugin built URLs from sources imgproxy can't fetch.
 
 ### Removed
 
