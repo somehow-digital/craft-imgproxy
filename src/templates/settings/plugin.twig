@@ -26,3 +26,16 @@
 	errors: settings.getErrors('signatureSalt'),
 	suggestEnvVars: true,
 }) }}
+
+{{ forms.autosuggestField({
+	label: 'Fallback Format'|t('imgproxy'),
+	instructions: 'The format for sources that browsers can\'t display, such as HEIC and TIFF, when a transform has no format.'|t('imgproxy'),
+	id: 'fallbackFormat',
+	name: 'fallbackFormat',
+	value: settings.fallbackFormat,
+	errors: settings.getErrors('fallbackFormat'),
+	suggestions: [{label: 'Formats'|t('imgproxy'), data: [
+		{name: 'jpg'}, {name: 'png'}, {name: 'webp'}, {name: 'avif'},
+	]}],
+	suggestEnvVars: true,
+}) }}

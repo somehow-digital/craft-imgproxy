@@ -9,7 +9,6 @@ use craft\elements\Asset;
 use craft\helpers\App;
 use craft\helpers\Assets;
 use craft\helpers\Image;
-use craft\helpers\ImageTransforms;
 use craft\models\ImageTransform;
 use DateTime;
 use SomehowDigital\Craft\ImgProxy\helpers\GravityHelper;
@@ -151,10 +150,10 @@ final class BuilderService extends Component
 			return new Format($transform->format);
 		}
 
-		// imgproxy keeps the source format, while Craft converts sources that browsers can't display.
+		// imgproxy keeps the source format, while Craft converts sources that browsers can't display to JPEG.
 		return Image::isWebSafe($asset->getExtension())
 			? null
-			: new Format(ImageTransforms::detectTransformFormat($asset));
+			: new Format(Plugin::instance()->getSettings()->getFallbackFormat());
 	}
 
 	private function cacheBuster(Asset $asset): ?CacheBuster

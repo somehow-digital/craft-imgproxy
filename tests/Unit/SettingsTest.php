@@ -11,6 +11,7 @@ it('has no values by default', function (): void {
 	expect($settings->endpoint)->toBeNull();
 	expect($settings->signatureKey)->toBeNull();
 	expect($settings->signatureSalt)->toBeNull();
+	expect($settings->fallbackFormat)->toBe('jpg');
 });
 
 it('trims its values', function (): void {
@@ -30,7 +31,7 @@ it('parses environment variables in all of its values', function (): void {
 	$parser = (new Settings())->getBehavior('parser');
 
 	expect($parser)->toBeInstanceOf(EnvAttributeParserBehavior::class);
-	expect($parser instanceof EnvAttributeParserBehavior ? $parser->attributes : null)->toBe(['endpoint', 'signatureKey', 'signatureSalt']);
+	expect($parser instanceof EnvAttributeParserBehavior ? $parser->attributes : null)->toBe(['endpoint', 'signatureKey', 'signatureSalt', 'fallbackFormat']);
 });
 
 it('keeps references to environment variables', function (): void {
@@ -114,4 +115,26 @@ it('names the invalid attribute in its error', function (): void {
 	$settings->validate();
 
 	expect($settings->getFirstError('signatureKey'))->toBe('Signature Key must be a hexadecimal string.');
+});
+
+it('validates the fallback format', function (string $format, bool $valid, string $resolved): void {
+	$settings = new Settings(['fallbackFormat' => $format]);
+
+	expect($settings->validate())->toBe($valid);
+	expect($settings->getFallbackFormat())->toBe($resolved);
+})->with([
+	'jpg' => ['jpg', true, 'jpg'],
+	'png' => ['png', true, 'png'],
+	'webp' => ['webp', true, 'webp'],
+	'avif' => ['avif', true, 'avif'],
+	'uppercase' => [' WEBP ', true, 'webp'],
+	'unsupported' => ['heic', false, 'jpg'],
+	'empty' => ['', true, 'jpg'],
+]);
+
+it('explains which fallback formats are supported', function (): void {
+	$settings = new Settings(['fallbackFormat' => 'heic']);
+	$settings->validate();
+
+	expect($settings->getFirstError('fallbackFormat'))->toBe('Fallback Format must be one of: jpg, png, webp, avif.');
 });
