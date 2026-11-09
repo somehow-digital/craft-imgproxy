@@ -22,7 +22,19 @@ final class Settings extends Model
 	 */
 	public function isConfigured(): bool
 	{
-		return $this->resolve($this->endpoint) !== '' && $this->getSignatureErrors() === [];
+		return $this->getEndpointError() === null && $this->getSignatureErrors() === [];
+	}
+
+	/**
+	 * @internal Validation rule.
+	 */
+	public function validateEndpoint(string $attribute): void
+	{
+		$error = $this->getEndpointError();
+
+		if ($error !== null) {
+			$this->addError($attribute, $error);
+		}
 	}
 
 	/**
@@ -42,8 +54,25 @@ final class Settings extends Model
 	{
 		return [
 			[['endpoint', 'signatureKey', 'signatureSalt'], 'trim'],
+			[['endpoint'], 'validateEndpoint'],
 			[['signatureKey', 'signatureSalt'], 'validateSignature'],
 		];
+	}
+
+	/**
+	 * Checks the resolved endpoint without touching the model, so it is safe to call for every URL.
+	 */
+	private function getEndpointError(): ?string
+	{
+		$endpoint = $this->resolve($this->endpoint);
+
+		if (filter_var($endpoint, FILTER_VALIDATE_URL) !== false && preg_match('#^https?://#i', $endpoint) === 1) {
+			return null;
+		}
+
+		return Craft::t('imgproxy', '{attribute} must be an HTTP or HTTPS URL.', [
+			'attribute' => $this->getAttributeLabel('endpoint'),
+		]);
 	}
 
 	/**
