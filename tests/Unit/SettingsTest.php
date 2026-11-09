@@ -72,3 +72,10 @@ it('is configured with an endpoint and a valid signature', function (string $end
 	'no endpoint' => ['', '', '', false],
 	'invalid signature' => ['https://imgproxy.example.test', 'secret', '73616c74', false],
 ]);
+
+it('names the invalid attribute in its error', function (): void {
+	$settings = new Settings(['signatureKey' => 'secret', 'signatureSalt' => '73616c74']);
+	$settings->validate();
+
+	expect($settings->getFirstError('signatureKey'))->toBe('Signature Key must be a hexadecimal string.');
+});
