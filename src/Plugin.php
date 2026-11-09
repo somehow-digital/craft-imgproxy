@@ -130,7 +130,6 @@ final class Plugin extends PluginBase
 					'width' => $event->width,
 					'height' => $event->height,
 					'format' => 'webp',
-					'quality' => Craft::$app->getConfig()->getGeneral()->defaultImageQuality,
 				]);
 
 				$event->url = $this->getBuilder()->getUrl($event->asset, $transform);

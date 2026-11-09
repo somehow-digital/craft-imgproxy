@@ -69,7 +69,7 @@ describe('asset URLs', function (): void {
 		$url = $this->asset()->getUrl(['width' => 300, 'height' => 200, 'upscale' => false]);
 
 		expect($url)->toStartWith('https://imgproxy.example.test/_/');
-		expect(urlOptions($url))->toBe(['rs:fill:300:200']);
+		expect(urlOptions($url))->toBe(['rs:fill:300:200', 'q:70']);
 	});
 
 	it('defines the URL of a transform given as a model', function (): void {
@@ -93,12 +93,12 @@ describe('asset URLs', function (): void {
 	it('defines the URL of a transform given as a string', function (string $transform, array $options): void {
 		expect(urlOptions($this->asset()->getUrl($transform)))->toBe($options);
 	})->with([
-		'dimensions' => ['_300x200_crop_center-center_none', ['rs:fill:300:200:1']],
-		'width only' => ['_300xAUTO_fit_center-center_none', ['rs:fit:300:0:1']],
-		'height only' => ['_AUTOx200_fit_center-center_none', ['rs:fit:0:200:1']],
+		'dimensions' => ['_300x200_crop_center-center_none', ['rs:fill:300:200:1', 'q:70']],
+		'width only' => ['_300xAUTO_fit_center-center_none', ['rs:fit:300:0:1', 'q:70']],
+		'height only' => ['_AUTOx200_fit_center-center_none', ['rs:fit:0:200:1', 'q:70']],
 		'position and quality' => ['_300x200_crop_top-left_80_none', ['rs:fill:300:200:1', 'g:nowe', 'q:80']],
-		'no upscaling' => ['_300x200_crop_center-center_none_ns', ['rs:fill:300:200']],
-		'letterbox with fill' => ['_300x200_letterbox_center-center_none_ff0000', ['rs:fit:300:200:1:1', 'bg:ff0000']],
+		'no upscaling' => ['_300x200_crop_center-center_none_ns', ['rs:fill:300:200', 'q:70']],
+		'letterbox with fill' => ['_300x200_letterbox_center-center_none_ff0000', ['rs:fit:300:200:1:1', 'bg:ff0000', 'q:70']],
 	]);
 
 	it('extends a base transform', function (): void {
@@ -109,7 +109,7 @@ describe('asset URLs', function (): void {
 	});
 
 	it('normalizes the fill color of a transform given as an array', function (): void {
-		expect(urlOptions($this->asset()->getUrl(['fill' => 'ff0000'])))->toBe(['bg:ff0000']);
+		expect(urlOptions($this->asset()->getUrl(['fill' => 'ff0000'])))->toBe(['bg:ff0000', 'q:70']);
 	});
 
 	it('leaves assets without a transform to Craft', function (): void {
@@ -169,10 +169,8 @@ describe('thumbnail URLs', function (): void {
 	it('defines the URL of a thumbnail', function (): void {
 		$url = Craft::$app->getAssets()->getThumbUrl($this->asset(), 120, 80);
 
-		$quality = Craft::$app->getConfig()->getGeneral()->defaultImageQuality;
-
 		expect($url)->toStartWith('https://imgproxy.example.test/_/');
-		expect(urlOptions($url))->toBe(['rs:fill:120:80:1', "q:{$quality}", 'f:webp']);
+		expect(urlOptions($url))->toBe(['rs:fill:120:80:1', 'q:70', 'f:webp']);
 		expect(urlSource($url))->toBe('https://assets.example.test/image.jpg');
 	});
 

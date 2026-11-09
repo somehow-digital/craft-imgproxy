@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SomehowDigital\Craft\ImgProxy\services;
 
+use Craft;
 use craft\elements\Asset;
 use craft\helpers\App;
 use craft\helpers\Assets;
@@ -48,11 +49,7 @@ final class BuilderService extends Component
 			$this->cacheBuster($asset),
 		], static fn(?OptionInterface $option): bool => $option instanceof OptionInterface);
 
-		if ($options !== []) {
-			$url = $url->options(...$options);
-		}
-
-		return $this->build($url->build());
+		return $this->build($url->options(...$options)->build());
 	}
 
 	private function resize(ImageTransform $transform): ?Resize
@@ -106,9 +103,10 @@ final class BuilderService extends Component
 		return null;
 	}
 
-	private function quality(ImageTransform $transform): ?Quality
+	private function quality(ImageTransform $transform): Quality
 	{
-		return $transform->quality !== null ? new Quality($transform->quality) : null;
+		// Like Craft, fall back to the default image quality when the transform has none.
+		return new Quality($transform->quality ?? Craft::$app->getConfig()->getGeneral()->defaultImageQuality);
 	}
 
 	private function format(ImageTransform $transform): ?Format
