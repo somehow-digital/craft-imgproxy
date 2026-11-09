@@ -7,6 +7,7 @@
 
 * Craft CMS 5.8.0 or later.
 * PHP 8.2 or later.
+* imgproxy 3.0 or later.
 
 ## Installation
 
