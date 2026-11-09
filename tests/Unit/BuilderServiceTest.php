@@ -292,3 +292,21 @@ describe('options', function (): void {
 		]);
 	});
 });
+
+describe('asset URLs', function (): void {
+	it('returns null without a transform', function (): void {
+		expect(Plugin::instance()->getBuilder()->getAssetUrl(Asset::image(), null))->toBeNull();
+	});
+
+	it('returns null for an asset that is not supported', function (): void {
+		expect(Plugin::instance()->getBuilder()->getAssetUrl(Asset::image(['filename' => 'document.pdf']), ['width' => 300]))->toBeNull();
+	});
+});
+
+describe('thumbnail URLs', function (): void {
+	it('returns null when the thumbnails are disabled', function (): void {
+		$this->settings(['thumbnails' => false]);
+
+		expect(Plugin::instance()->getBuilder()->getThumbnailUrl(Asset::image(), 120, 80))->toBeNull();
+	});
+});

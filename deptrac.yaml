@@ -92,8 +92,8 @@ deptrac:
             - GLOBALS
 
   ruleset:
-    # Registers everything, and listens to the events of Craft, using the SDK to tell the assets it can transform.
-    Plugin: [Services, Models, Helpers, ImgProxySdk, YiiEvent, CraftServices]
+    # Registers everything, and listens to the events of Craft.
+    Plugin: [Services, Models, Helpers, YiiEvent, CraftServices]
 
     # Services get their settings through the plugin.
     Services: [Plugin, Models, Helpers, ImgProxySdk]

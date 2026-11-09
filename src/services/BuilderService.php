@@ -6,8 +6,10 @@ namespace SomehowDigital\Craft\ImgProxy\services;
 
 use Craft;
 use craft\elements\Asset;
+use craft\errors\ImageTransformException;
 use craft\helpers\Assets;
 use craft\helpers\Image;
+use craft\helpers\ImageTransforms;
 use craft\models\ImageTransform;
 use DateTime;
 use SomehowDigital\Craft\ImgProxy\helpers\GravityHelper;
@@ -30,6 +32,7 @@ use SomehowDigital\ImgProxy\Option\ResizingTypeEnum;
 use SomehowDigital\ImgProxy\Option\Width;
 use SomehowDigital\ImgProxy\Signer\Signer;
 use SomehowDigital\ImgProxy\Url;
+use SomehowDigital\ImgProxy\Utility\Format as SupportedFormat;
 use yii\base\Component;
 
 /**
@@ -52,6 +55,50 @@ final class BuilderService extends Component
 		], static fn(?OptionInterface $option): bool => $option instanceof OptionInterface);
 
 		return $this->build($url->options(...$options)->build());
+	}
+
+	/**
+	 * The URL for an asset and a transform in any form Craft accepts, or null when Craft is to generate it.
+	 */
+	public function getAssetUrl(Asset $asset, mixed $transform): ?string
+	{
+		if (!$this->supports($asset)) {
+			return null;
+		}
+
+		try {
+			$transform = ImageTransforms::normalizeTransform($transform);
+		} catch (ImageTransformException) {
+			return null;
+		}
+
+		return $transform instanceof ImageTransform ? $this->getUrl($asset, $transform) : null;
+	}
+
+	/**
+	 * The URL of a control panel thumbnail, or null when Craft is to generate it.
+	 */
+	public function getThumbnailUrl(Asset $asset, int $width, int $height): ?string
+	{
+		$settings = Plugin::instance()->getSettings();
+
+		if (!$settings->isThumbnailsEnabled() || !$this->supports($asset)) {
+			return null;
+		}
+
+		return $this->getUrl($asset, new ImageTransform([
+			'width' => $width,
+			'height' => $height,
+			'format' => $settings->getThumbnailFormat(),
+		]));
+	}
+
+	private function supports(Asset $asset): bool
+	{
+		return Plugin::instance()->getSettings()->isConfigured()
+			&& $asset->kind === Asset::KIND_IMAGE
+			&& SupportedFormat::supports($asset->getExtension())
+			&& preg_match('#^https?://#i', (string) $asset->getVolume()->getRootUrl()) === 1;
 	}
 
 	private function resize(Asset $asset, ImageTransform $transform): ?Resize
