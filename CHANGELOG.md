@@ -14,6 +14,10 @@
 - `Settings::defineRules()` is protected, like in Craft's `Model`.
 - The components are declared in `Plugin::config()`.
 
+### Fixed
+
+- Signed URLs are signed including the leading slash of their path, as imgproxy expects. Before, imgproxy rejected them.
+
 ### Removed
 
 - The `string` validation rule of the settings, which the typed properties already enforce.
