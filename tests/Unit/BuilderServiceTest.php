@@ -170,6 +170,18 @@ describe('options', function (): void {
 		expect(urlOptions(imageUrl(['format' => 'webp'])))->toBe(['q:70', 'f:webp']);
 	});
 
+	it('converts sources that browsers cannot display to JPEG, like Craft', function (string $filename): void {
+		expect(urlOptions(imageUrl(asset: ['filename' => $filename])))->toBe(['q:70', 'f:jpg']);
+	})->with(['image.heic', 'image.tif', 'image.tiff', 'image.bmp', 'IMAGE.HEIC']);
+
+	it('keeps the source format of sources that browsers can display', function (string $filename): void {
+		expect(urlOptions(imageUrl(asset: ['filename' => $filename])))->toBe(['q:70']);
+	})->with(['image.jpg', 'image.jpeg', 'image.png', 'image.gif', 'image.webp', 'image.avif', 'image.svg']);
+
+	it('prefers the format of the transform over the converted one', function (): void {
+		expect(urlOptions(imageUrl(['format' => 'webp'], ['filename' => 'image.heic'])))->toBe(['q:70', 'f:webp']);
+	});
+
 	it('leaves out an empty format', function (): void {
 		expect(urlOptions(imageUrl(['format' => ''])))->toBe(['q:70']);
 	});
