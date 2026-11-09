@@ -5,6 +5,7 @@
 ### Added
 
 - `Settings::isConfigured()`, which tells whether the endpoint is set and the signature is valid.
+- `Settings::getEndpoint()`, `Settings::getSignatureKey()` and `Settings::getSignatureSalt()`, which return the values with environment variables and aliases resolved.
 - `Plugin::instance()`, which returns the plugin, or throws when it is not loaded.
 - The `fallbackFormat` setting, which sets the format for sources that browsers can't display when a transform has none. It defaults to `jpg`, like Craft.
 - The `thumbnails` setting, which turns the imgproxy thumbnails of the control panel off, so Craft generates them. It is on by default.

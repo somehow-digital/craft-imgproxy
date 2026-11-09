@@ -43,6 +43,30 @@ final class Settings extends Model
 	}
 
 	/**
+	 * The endpoint with environment variables and aliases resolved.
+	 */
+	public function getEndpoint(): string
+	{
+		return $this->resolve($this->endpoint);
+	}
+
+	/**
+	 * The signature key with environment variables and aliases resolved.
+	 */
+	public function getSignatureKey(): string
+	{
+		return $this->resolve($this->signatureKey);
+	}
+
+	/**
+	 * The signature salt with environment variables and aliases resolved.
+	 */
+	public function getSignatureSalt(): string
+	{
+		return $this->resolve($this->signatureSalt);
+	}
+
+	/**
 	 * Whether imgproxy replaces the thumbnails of the control panel. An unset environment variable counts as enabled.
 	 */
 	public function isThumbnailsEnabled(): bool
@@ -121,7 +145,7 @@ final class Settings extends Model
 	 */
 	private function getEndpointError(): ?string
 	{
-		$endpoint = $this->resolve($this->endpoint);
+		$endpoint = $this->getEndpoint();
 
 		if (filter_var($endpoint, FILTER_VALIDATE_URL) !== false && preg_match('#^https?://#i', $endpoint) === 1) {
 			return null;
@@ -140,8 +164,8 @@ final class Settings extends Model
 	private function getSignatureErrors(): array
 	{
 		$values = [
-			'signatureKey' => $this->resolve($this->signatureKey),
-			'signatureSalt' => $this->resolve($this->signatureSalt),
+			'signatureKey' => $this->getSignatureKey(),
+			'signatureSalt' => $this->getSignatureSalt(),
 		];
 
 		$errors = [];

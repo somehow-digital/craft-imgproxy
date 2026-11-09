@@ -102,6 +102,23 @@ it('keeps its errors when checking the configuration', function (): void {
 	expect($settings->hasErrors('signatureKey'))->toBeTrue();
 });
 
+it('resolves the endpoint and the signature', function (): void {
+	$this->env(['IMGPROXY_ENDPOINT' => 'https://imgproxy.example.test', 'IMGPROXY_KEY' => '736563726574', 'IMGPROXY_SALT' => '73616c74']);
+	$settings = new Settings(['endpoint' => '$IMGPROXY_ENDPOINT', 'signatureKey' => '$IMGPROXY_KEY', 'signatureSalt' => '$IMGPROXY_SALT']);
+
+	expect($settings->getEndpoint())->toBe('https://imgproxy.example.test');
+	expect($settings->getSignatureKey())->toBe('736563726574');
+	expect($settings->getSignatureSalt())->toBe('73616c74');
+});
+
+it('resolves unset values to empty strings', function (): void {
+	$settings = new Settings();
+
+	expect($settings->getEndpoint())->toBe('');
+	expect($settings->getSignatureKey())->toBe('');
+	expect($settings->getSignatureSalt())->toBe('');
+});
+
 it('is configured with an endpoint and a valid signature', function (string $endpoint, string $key, string $salt, bool $configured): void {
 	expect((new Settings(['endpoint' => $endpoint, 'signatureKey' => $key, 'signatureSalt' => $salt]))->isConfigured())->toBe($configured);
 })->with([
