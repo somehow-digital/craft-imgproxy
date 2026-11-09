@@ -113,7 +113,7 @@ final class BuilderService extends Component
 
 	private function format(Asset $asset, ImageTransform $transform): ?Format
 	{
-		if ($transform->format !== null && $transform->format !== '') {
+		if ($transform->format !== null) {
 			return new Format($transform->format);
 		}
 
