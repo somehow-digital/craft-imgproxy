@@ -27,7 +27,7 @@
 	"require": {
 		"php": "^8.2",
 		"craftcms/cms": "^5.8.0",
-		"somehow-digital/imgproxy": "^1.0.0"
+		"somehow-digital/imgproxy": "^1.1.0"
 	},
 	"require-dev": {
 		"craftcms/phpstan": "dev-main",
