@@ -44,7 +44,7 @@ final class BuilderService extends Component
 		$url = $this->create($asset);
 
 		$options = array_filter([
-			$this->resize($transform),
+			$this->resize($asset, $transform),
 			$this->extend($transform),
 			$this->gravity($asset, $transform),
 			$this->background($transform),
@@ -56,25 +56,50 @@ final class BuilderService extends Component
 		return $this->build($url->options(...$options)->build());
 	}
 
-	private function resize(ImageTransform $transform): ?Resize
+	private function resize(Asset $asset, ImageTransform $transform): ?Resize
 	{
 		if (($transform->width ?? 0) === 0 && ($transform->height ?? 0) === 0) {
 			return null;
 		}
 
+		[$width, $height] = $this->dimensions($asset, $transform);
+		$upscale = $transform->upscale === true;
+
 		$resizingType = match ($transform->mode) {
-			'fit' => ResizingTypeEnum::FIT,
-			'letterbox' => ResizingTypeEnum::FIT,
+			'fit', 'letterbox' => ResizingTypeEnum::FIT,
 			'stretch' => ResizingTypeEnum::FORCE,
-			default => ResizingTypeEnum::FILL,
+			default => $upscale ? ResizingTypeEnum::FILL : ResizingTypeEnum::FILL_DOWN,
 		};
 
 		return new Resize(
 			new ResizingType($resizingType),
-			new Width($transform->width ?? 0),
-			new Height($transform->height ?? 0),
-			$transform->upscale === true ? new Enlarge() : null,
+			new Width($width),
+			new Height($height),
+			($upscale || $transform->mode === 'stretch') ? new Enlarge() : null,
 		);
+	}
+
+	/**
+	 * @return array{0:int,1:int}
+	 */
+	private function dimensions(Asset $asset, ImageTransform $transform): array
+	{
+		$width = $transform->width ?? 0;
+		$height = $transform->height ?? 0;
+
+		if ($width === 0 || $height === 0) {
+			// Without a transform, the asset reports the size of the source instead of the size of the transform set on it.
+			$source = (clone $asset)->setTransform(null);
+			$sourceWidth = $source->getWidth();
+			$sourceHeight = $source->getHeight();
+
+			if ($sourceWidth !== null && $sourceHeight !== null) {
+				/** @var array{0:int,1:int} */
+				return Image::calculateMissingDimension($width, $height, $sourceWidth, $sourceHeight);
+			}
+		}
+
+		return [$width, $height];
 	}
 
 	private function extend(ImageTransform $transform): ?Extend

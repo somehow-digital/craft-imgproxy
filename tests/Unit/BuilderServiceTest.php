@@ -91,19 +91,17 @@ describe('resize', function (): void {
 		expect(urlOptions(imageUrl()))->toBe(['q:70']);
 	});
 
-	it('maps the mode to a resizing type', function (string $mode, string $type): void {
-		expect(urlOptions(imageUrl(['mode' => $mode, 'width' => 300, 'height' => 200, 'upscale' => false])))
-			->toBe(["rs:{$type}:300:200", 'q:70']);
+	it('maps the mode and the upscaling to a resizing type', function (string $mode, bool $upscale, string $resize): void {
+		expect(urlOptions(imageUrl(['mode' => $mode, 'width' => 300, 'height' => 200, 'upscale' => $upscale])))
+			->toBe([$resize, 'q:70']);
 	})->with([
-		['crop', 'fill'],
-		['fit', 'fit'],
-		['stretch', 'force'],
+		'crop with upscaling' => ['crop', true, 'rs:fill:300:200:1'],
+		'crop without upscaling' => ['crop', false, 'rs:fill-down:300:200'],
+		'fit with upscaling' => ['fit', true, 'rs:fit:300:200:1'],
+		'fit without upscaling' => ['fit', false, 'rs:fit:300:200'],
+		'stretch with upscaling' => ['stretch', true, 'rs:force:300:200:1'],
+		'stretch without upscaling' => ['stretch', false, 'rs:force:300:200:1'],
 	]);
-
-	it('enlarges images when upscaling', function (): void {
-		expect(urlOptions(imageUrl(['width' => 300, 'height' => 200, 'upscale' => true])))
-			->toBe(['rs:fill:300:200:1', 'q:70']);
-	});
 
 	it('fits and extends images for letterboxing', function (): void {
 		expect(urlOptions(imageUrl(['mode' => 'letterbox', 'width' => 300, 'height' => 200, 'upscale' => true])))
@@ -143,16 +141,50 @@ describe('resize', function (): void {
 			->not->toContain('ex:1:nowe');
 	})->with(['crop', 'fit', 'stretch']);
 
-	it('resizes with only a width', function (): void {
-		expect(urlOptions(imageUrl(['width' => 300, 'upscale' => false])))->toBe(['rs:fill:300:0', 'q:70']);
+	it('keeps a missing dimension when the size of the asset is unknown', function (array $transform, array $asset, string $resize): void {
+		/** @var array<string,mixed> $transform */
+		/** @var array<string,mixed> $asset */
+		expect(urlOptions(imageUrl($transform, $asset)))->toBe([$resize, 'q:70']);
+	})->with([
+		'only a width' => [['width' => 300, 'upscale' => false], [], 'rs:fill-down:300:0'],
+		'only a width and upscaling' => [['width' => 300, 'upscale' => true], [], 'rs:fill:300:0:1'],
+		'only a height' => [['height' => 200, 'upscale' => false], [], 'rs:fill-down:0:200'],
+		'only the width of the asset' => [['width' => 300, 'upscale' => false], ['width' => 800], 'rs:fill-down:300:0'],
+		'only the height of the asset' => [['width' => 300, 'upscale' => false], ['height' => 600], 'rs:fill-down:300:0'],
+	]);
+
+	it('calculates a missing dimension from the size of the asset, like Craft', function (array $transform, string $resize): void {
+		/** @var array<string,mixed> $transform */
+		expect(urlOptions(imageUrl($transform, ['width' => 800, 'height' => 600])))->toBe([$resize, 'q:70']);
+	})->with([
+		'only a width' => [['width' => 300, 'upscale' => false], 'rs:fill-down:300:225'],
+		'only a height' => [['height' => 150, 'upscale' => false], 'rs:fill-down:200:150'],
+		'only a width and upscaling' => [['width' => 300, 'upscale' => true], 'rs:fill:300:225:1'],
+		'only a width and stretching' => [['width' => 300, 'mode' => 'stretch'], 'rs:force:300:225:1'],
+		'only a height and fitting' => [['height' => 150, 'mode' => 'fit', 'upscale' => false], 'rs:fit:200:150'],
+		'both dimensions' => [['width' => 300, 'height' => 100, 'upscale' => false], 'rs:fill-down:300:100'],
+	]);
+
+	it('keeps a missing dimension when the asset knows only one dimension of its source', function (array $dimensions): void {
+		expect(urlOptions(imageUrl(['width' => 300, 'upscale' => false], ['dimensions' => $dimensions])))
+			->toBe(['rs:fill-down:300:0', 'q:70']);
+	})->with([
+		'only the width' => [[800, null]],
+		'only the height' => [[null, 600]],
+	]);
+
+	it('uses the size of the source, not the size of a transform set on the asset', function (): void {
+		$asset = Asset::image(['width' => 800, 'height' => 600]);
+		$asset->setTransform(['width' => 300, 'height' => 100]);
+
+		$url = Plugin::instance()->getBuilder()->getUrl($asset, new ImageTransform(['width' => 600, 'upscale' => false]));
+
+		expect(urlOptions($url))->toBe(['rs:fill-down:600:450', 'q:70']);
 	});
 
-	it('keeps the position of the height when upscaling with only a width', function (): void {
-		expect(urlOptions(imageUrl(['width' => 300, 'upscale' => true])))->toBe(['rs:fill:300:0:1', 'q:70']);
-	});
-
-	it('keeps the position of the width with only a height', function (): void {
-		expect(urlOptions(imageUrl(['height' => 200, 'upscale' => false])))->toBe(['rs:fill:0:200', 'q:70']);
+	it('calculates the dimension of letterboxes from the size of the asset', function (): void {
+		expect(urlOptions(imageUrl(['mode' => 'letterbox', 'width' => 300, 'upscale' => false], ['width' => 100, 'height' => 50])))
+			->toBe(['rs:fit:300:150', 'ex:1', 'q:70']);
 	});
 
 	it('does not enlarge letterboxed images without upscaling', function (): void {

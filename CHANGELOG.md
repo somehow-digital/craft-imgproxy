@@ -9,6 +9,7 @@
 
 ### Changed
 
+- Crops without upscaling use the `fill-down` resizing type, so imgproxy 3.0 or newer is required.
 - The endpoint must be an HTTP or HTTPS URL, and the signature key and salt must be hexadecimal strings, and set together.
 - The `Plugin`, `Settings`, `BuilderService` and `GravityHelper` classes are final, so they can no longer be extended.
 - The `Builder` service is now `BuilderService`. The `builder` component and `Plugin::getBuilder()` are unchanged.
@@ -21,6 +22,9 @@
 
 - An invalid endpoint or signature, an empty endpoint or a signature with only a key or a salt no longer fail requests or produce broken URLs. The plugin leaves the URLs to Craft instead.
 - Sources browsers can't display, such as HEIC and TIFF, are converted to JPEG when the transform has no format, like Craft does. Before, imgproxy kept the source format.
+- Transforms with only a width or a height calculate the other one from the size of the asset, like Craft. Before, stretched and letterboxed images could end up with the wrong size.
+- Crops without upscaling keep the aspect ratio of the transform when the image is smaller than the transform, like Craft.
+- Stretched images are enlarged, regardless of upscaling, like Craft.
 - Letterboxed images are placed at the position of the transform. Before, they were always centered.
 - Files with an uppercase extension, such as `IMAGE.JPG`, are handled. Before, they were left to Craft.
 - Signed URLs are signed including the leading slash of their path, as imgproxy expects. Before, imgproxy rejected them.
