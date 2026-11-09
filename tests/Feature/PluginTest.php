@@ -98,7 +98,7 @@ describe('asset URLs', function (): void {
 		'height only' => ['_AUTOx200_fit_center-center_none', ['rs:fit:0:200:1', 'q:70']],
 		'position and quality' => ['_300x200_crop_top-left_80_none', ['rs:fill:300:200:1', 'g:nowe', 'q:80']],
 		'no upscaling' => ['_300x200_crop_center-center_none_ns', ['rs:fill:300:200', 'q:70']],
-		'letterbox with fill' => ['_300x200_letterbox_center-center_none_ff0000', ['rs:fit:300:200:1:1', 'bg:ff0000', 'q:70']],
+		'letterbox with fill' => ['_300x200_letterbox_center-center_none_ff0000', ['rs:fit:300:200:1', 'ex:1', 'bg:ff0000', 'q:70']],
 	]);
 
 	it('extends a base transform', function (): void {
