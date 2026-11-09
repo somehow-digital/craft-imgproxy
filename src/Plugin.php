@@ -129,7 +129,7 @@ final class Plugin extends PluginBase
 				$transform = new ImageTransform([
 					'width' => $event->width,
 					'height' => $event->height,
-					'format' => 'webp',
+					'format' => $this->getSettings()->getThumbnailFormat(),
 				]);
 
 				$event->url = $this->getBuilder()->getUrl($event->asset, $transform);

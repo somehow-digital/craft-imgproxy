@@ -49,3 +49,16 @@
 	includeEnvVars: true,
 	errors: settings.getErrors('thumbnails'),
 }) }}
+
+{{ forms.autosuggestField({
+	label: 'Thumbnail Format'|t('imgproxy'),
+	instructions: 'The format of the thumbnails of the control panel.'|t('imgproxy'),
+	id: 'thumbnailFormat',
+	name: 'thumbnailFormat',
+	value: settings.thumbnailFormat,
+	errors: settings.getErrors('thumbnailFormat'),
+	suggestions: [{label: 'Formats'|t('imgproxy'), data: [
+		{name: 'webp'}, {name: 'avif'}, {name: 'jpg'}, {name: 'png'},
+	]}],
+	suggestEnvVars: true,
+}) }}
