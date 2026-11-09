@@ -6,6 +6,7 @@
 
 - `Settings::isConfigured()`, which tells whether the endpoint is set and the signature is valid.
 - `Plugin::instance()`, which returns the plugin, or throws when it is not loaded.
+- The `fallbackFormat` setting, which sets the format for sources that browsers can't display when a transform has none. It defaults to `jpg`, like Craft.
 
 ### Changed
 

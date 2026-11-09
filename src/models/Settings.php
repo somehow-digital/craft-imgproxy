@@ -11,11 +11,18 @@ use craft\helpers\App;
 
 final class Settings extends Model
 {
+	private const FALLBACK_FORMATS = ['jpg', 'png', 'webp', 'avif'];
+
 	public ?string $endpoint = null;
 
 	public ?string $signatureKey = null;
 
 	public ?string $signatureSalt = null;
+
+	/**
+	 * The format for sources that browsers can't display, such as HEIC and TIFF, when the transform has none.
+	 */
+	public string $fallbackFormat = 'jpg';
 
 	/**
 	 * Whether the endpoint and the signature are usable, so the plugin can replace the URLs of Craft.
@@ -38,6 +45,29 @@ final class Settings extends Model
 	}
 
 	/**
+	 * The resolved fallback format, or JPEG when it is invalid.
+	 */
+	public function getFallbackFormat(): string
+	{
+		$format = strtolower($this->resolve($this->fallbackFormat));
+
+		return in_array($format, self::FALLBACK_FORMATS, true) ? $format : 'jpg';
+	}
+
+	/**
+	 * @internal Validation rule.
+	 */
+	public function validateFallbackFormat(string $attribute): void
+	{
+		if (!in_array(strtolower($this->resolve($this->fallbackFormat)), self::FALLBACK_FORMATS, true)) {
+			$this->addError($attribute, Craft::t('imgproxy', '{attribute} must be one of: {formats}.', [
+				'attribute' => $this->getAttributeLabel($attribute),
+				'formats' => implode(', ', self::FALLBACK_FORMATS),
+			]));
+		}
+	}
+
+	/**
 	 * @internal Validation rule.
 	 */
 	public function validateSignature(string $attribute): void
@@ -53,8 +83,9 @@ final class Settings extends Model
 	protected function defineRules(): array
 	{
 		return [
-			[['endpoint', 'signatureKey', 'signatureSalt'], 'trim'],
+			[['endpoint', 'signatureKey', 'signatureSalt', 'fallbackFormat'], 'trim'],
 			[['endpoint'], 'validateEndpoint'],
+			[['fallbackFormat'], 'validateFallbackFormat'],
 			[['signatureKey', 'signatureSalt'], 'validateSignature'],
 		];
 	}
@@ -128,6 +159,7 @@ final class Settings extends Model
 					'endpoint',
 					'signatureKey',
 					'signatureSalt',
+					'fallbackFormat',
 				],
 			],
 		];

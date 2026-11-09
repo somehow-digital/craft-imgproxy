@@ -239,6 +239,12 @@ describe('options', function (): void {
 		expect(urlOptions(imageUrl(asset: ['filename' => $filename])))->toBe(['q:70', 'f:jpg']);
 	})->with(['image.heic', 'image.tif', 'image.tiff', 'image.bmp', 'IMAGE.HEIC']);
 
+	it('converts sources that browsers cannot display to the fallback format', function (): void {
+		$this->settings(['fallbackFormat' => 'webp']);
+
+		expect(urlOptions(imageUrl(asset: ['filename' => 'image.heic'])))->toBe(['q:70', 'f:webp']);
+	});
+
 	it('keeps the source format of sources that browsers can display', function (string $filename): void {
 		expect(urlOptions(imageUrl(asset: ['filename' => $filename])))->toBe(['q:70']);
 	})->with(['image.jpg', 'image.jpeg', 'image.png', 'image.gif', 'image.webp', 'image.avif', 'image.svg']);
