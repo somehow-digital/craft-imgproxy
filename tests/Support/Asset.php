@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SomehowDigital\Craft\ImgProxy\Tests\Support;
 
 use craft\elements\Asset as AssetElement;
+use craft\models\ImageTransform;
 use craft\models\Volume;
 
 /**
@@ -18,6 +19,13 @@ class Asset extends AssetElement
 	public ?string $rootUrl = 'https://assets.example.test/';
 
 	/**
+	 * The width and the height the asset reports for its source, which are both unknown or both known in Craft.
+	 *
+	 * @var array{0:int|null,1:int|null}|null
+	 */
+	public ?array $dimensions = null;
+
+	/**
 	 * An image asset, without a date of its last modification unless given.
 	 *
 	 * @param array<string,mixed> $config
@@ -29,6 +37,22 @@ class Asset extends AssetElement
 			'kind' => self::KIND_IMAGE,
 			...$config,
 		]);
+	}
+
+	/**
+	 * @param array<mixed>|string|ImageTransform|null $transform
+	 */
+	public function getWidth(array|string|ImageTransform|null $transform = null): ?int
+	{
+		return $this->dimensions !== null ? $this->dimensions[0] : parent::getWidth($transform);
+	}
+
+	/**
+	 * @param array<mixed>|string|ImageTransform|null $transform
+	 */
+	public function getHeight(mixed $transform = null): ?int
+	{
+		return $this->dimensions !== null ? $this->dimensions[1] : parent::getHeight($transform);
 	}
 
 	public function getVolume(): Volume
