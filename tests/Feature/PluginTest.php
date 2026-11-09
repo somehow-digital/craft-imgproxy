@@ -176,6 +176,15 @@ describe('thumbnail URLs', function (): void {
 		expect($event->url)->toBeNull();
 	});
 
+	it('leaves thumbnails to Craft when they are disabled', function (): void {
+		$this->settings(['thumbnails' => false]);
+
+		$event = new DefineAssetThumbUrlEvent(['asset' => $this->asset(), 'width' => 120, 'height' => 80]);
+		Craft::$app->getAssets()->trigger(Assets::EVENT_DEFINE_THUMB_URL, $event);
+
+		expect($event->url)->toBeNull();
+	});
+
 	it('leaves thumbnails to Craft when the signature is invalid', function (): void {
 		$this->settings(['signatureKey' => 'invalid', 'signatureSalt' => 'invalid']);
 

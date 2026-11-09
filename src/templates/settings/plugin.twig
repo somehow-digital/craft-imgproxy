@@ -39,3 +39,13 @@
 	]}],
 	suggestEnvVars: true,
 }) }}
+
+{{ forms.booleanMenuField({
+	label: 'Thumbnails'|t('imgproxy'),
+	instructions: 'Whether imgproxy generates the thumbnails of the control panel, or Craft does.'|t('imgproxy'),
+	id: 'thumbnails',
+	name: 'thumbnails',
+	value: settings.thumbnails,
+	includeEnvVars: true,
+	errors: settings.getErrors('thumbnails'),
+}) }}
