@@ -120,6 +120,10 @@ describe('asset URLs', function (): void {
 		expect(definedUrl($this->asset(['filename' => 'document.pdf']), ['width' => 300]))->toBeNull();
 	});
 
+	it('leaves files that Craft does not know as images to Craft', function (): void {
+		expect(definedUrl($this->asset(['filename' => 'image.ico', 'kind' => Asset::KIND_UNKNOWN]), ['width' => 300]))->toBeNull();
+	});
+
 	it('leaves URLs of other senders to Craft', function (): void {
 		$event = new DefineAssetUrlEvent(['transform' => ['width' => 300]]);
 
@@ -187,6 +191,18 @@ describe('thumbnail URLs', function (): void {
 		expect($url)->toStartWith('https://imgproxy.example.test/_/');
 		expect(urlOptions($url))->toBe(['rs:fill:120:80:1', 'q:70', 'f:webp']);
 		expect(urlSource($url))->toBe('https://assets.example.test/image.jpg');
+	});
+
+	it('leaves files that Craft does not know as images to Craft', function (): void {
+		$event = new DefineAssetThumbUrlEvent([
+			'asset' => $this->asset(['filename' => 'image.ico', 'kind' => Asset::KIND_UNKNOWN]),
+			'width' => 120,
+			'height' => 80,
+		]);
+
+		Craft::$app->getAssets()->trigger(Assets::EVENT_DEFINE_THUMB_URL, $event);
+
+		expect($event->url)->toBeNull();
 	});
 
 	it('leaves unsupported files to Craft', function (): void {
