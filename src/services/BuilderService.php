@@ -117,6 +117,7 @@ final class BuilderService extends Component
 			return new Format($transform->format);
 		}
 
+		// imgproxy keeps the source format, while Craft converts sources that browsers can't display.
 		return Image::isWebSafe($asset->getExtension())
 			? null
 			: new Format(ImageTransforms::detectTransformFormat($asset));

@@ -182,6 +182,10 @@ describe('options', function (): void {
 		expect(urlOptions(imageUrl(['format' => 'webp'], ['filename' => 'image.heic'])))->toBe(['q:70', 'f:webp']);
 	});
 
+	it('converts sources that browsers cannot display when the format is empty', function (): void {
+		expect(urlOptions(imageUrl(['format' => ''], ['filename' => 'image.heic'])))->toBe(['q:70', 'f:jpg']);
+	});
+
 	it('leaves out an empty format', function (): void {
 		expect(urlOptions(imageUrl(['format' => ''])))->toBe(['q:70']);
 	});
