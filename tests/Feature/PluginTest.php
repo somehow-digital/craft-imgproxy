@@ -112,6 +112,13 @@ describe('asset URLs', function (): void {
 		expect(urlOptions($this->asset()->getUrl(['fill' => 'ff0000'])))->toBe(['bg:ff0000', 'q:70']);
 	});
 
+	it('handles files with an uppercase extension', function (): void {
+		$url = $this->asset(['filename' => 'IMAGE.JPG'])->getUrl(['width' => 300]);
+
+		expect($url)->toStartWith('https://imgproxy.example.test/_/');
+		expect(urlSource($url))->toBe('https://assets.example.test/IMAGE.JPG');
+	});
+
 	it('leaves assets without a transform to Craft', function (): void {
 		expect(definedUrl($this->asset(), null))->toBeNull();
 	});
