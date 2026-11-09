@@ -39,3 +39,36 @@ it('keeps references to environment variables', function (): void {
 	expect($settings->validate())->toBeTrue();
 	expect($settings->endpoint)->toBe('$IMGPROXY_ENDPOINT');
 });
+
+it('validates the signature', function (string $key, string $salt, array $invalid): void {
+	$settings = new Settings(['signatureKey' => $key, 'signatureSalt' => $salt]);
+	$settings->validate();
+
+	expect($settings->hasErrors('signatureKey'))->toBe(in_array('signatureKey', $invalid, true));
+	expect($settings->hasErrors('signatureSalt'))->toBe(in_array('signatureSalt', $invalid, true));
+})->with([
+	'both hexadecimal' => ['736563726574', '73616c74', []],
+	'both empty' => ['', '', []],
+	'key not hexadecimal' => ['secret', '73616c74', ['signatureKey']],
+	'salt not hexadecimal' => ['736563726574', 'salt', ['signatureSalt']],
+	'odd length' => ['736', '73616c74', ['signatureKey']],
+	'only the key' => ['736563726574', '', ['signatureKey']],
+	'only the salt' => ['', '73616c74', ['signatureSalt']],
+]);
+
+it('keeps its errors when checking the configuration', function (): void {
+	$settings = new Settings(['endpoint' => 'https://imgproxy.example.test', 'signatureKey' => 'secret']);
+	$settings->validate();
+	$settings->isConfigured();
+
+	expect($settings->hasErrors('signatureKey'))->toBeTrue();
+});
+
+it('is configured with an endpoint and a valid signature', function (string $endpoint, string $key, string $salt, bool $configured): void {
+	expect((new Settings(['endpoint' => $endpoint, 'signatureKey' => $key, 'signatureSalt' => $salt]))->isConfigured())->toBe($configured);
+})->with([
+	'unsigned' => ['https://imgproxy.example.test', '', '', true],
+	'signed' => ['https://imgproxy.example.test', '736563726574', '73616c74', true],
+	'no endpoint' => ['', '', '', false],
+	'invalid signature' => ['https://imgproxy.example.test', 'secret', '73616c74', false],
+]);
