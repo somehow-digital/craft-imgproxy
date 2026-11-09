@@ -12,6 +12,7 @@ it('has no values by default', function (): void {
 	expect($settings->signatureKey)->toBeNull();
 	expect($settings->signatureSalt)->toBeNull();
 	expect($settings->fallbackFormat)->toBe('jpg');
+	expect($settings->thumbnailFormat)->toBe('webp');
 	expect($settings->thumbnails)->toBeTrue();
 });
 
@@ -32,7 +33,7 @@ it('parses environment variables in all of its values', function (): void {
 	$parser = (new Settings())->getBehavior('parser');
 
 	expect($parser)->toBeInstanceOf(EnvAttributeParserBehavior::class);
-	expect($parser instanceof EnvAttributeParserBehavior ? $parser->attributes : null)->toBe(['endpoint', 'signatureKey', 'signatureSalt', 'fallbackFormat', 'thumbnails']);
+	expect($parser instanceof EnvAttributeParserBehavior ? $parser->attributes : null)->toBe(['endpoint', 'signatureKey', 'signatureSalt', 'fallbackFormat', 'thumbnailFormat', 'thumbnails']);
 });
 
 it('keeps references to environment variables', function (): void {
@@ -154,3 +155,25 @@ it('enables thumbnails', function (bool|string $value, ?string $variable, bool $
 	'disabled by a variable' => ['$IMGPROXY_THUMBNAILS', '0', false],
 	'an unset variable' => ['$IMGPROXY_THUMBNAILS_UNSET', null, true],
 ]);
+
+it('validates the thumbnail format', function (string $format, bool $valid, string $resolved): void {
+	$settings = new Settings(['thumbnailFormat' => $format]);
+
+	expect($settings->validate())->toBe($valid);
+	expect($settings->getThumbnailFormat())->toBe($resolved);
+})->with([
+	'webp' => ['webp', true, 'webp'],
+	'avif' => ['avif', true, 'avif'],
+	'jpg' => ['jpg', true, 'jpg'],
+	'png' => ['png', true, 'png'],
+	'uppercase' => [' AVIF ', true, 'avif'],
+	'unsupported' => ['heic', false, 'webp'],
+	'empty' => ['', true, 'webp'],
+]);
+
+it('names the invalid format attribute in its error', function (): void {
+	$settings = new Settings(['thumbnailFormat' => 'heic']);
+	$settings->validate();
+
+	expect($settings->getFirstError('thumbnailFormat'))->toBe('Thumbnail Format must be one of: jpg, png, webp, avif.');
+});

@@ -11,7 +11,7 @@ use craft\helpers\App;
 
 final class Settings extends Model
 {
-	private const FALLBACK_FORMATS = ['jpg', 'png', 'webp', 'avif'];
+	private const FORMATS = ['jpg', 'png', 'webp', 'avif'];
 
 	public ?string $endpoint = null;
 
@@ -23,6 +23,11 @@ final class Settings extends Model
 	 * The format for sources that browsers can't display, such as HEIC and TIFF, when the transform has none.
 	 */
 	public string $fallbackFormat = 'jpg';
+
+	/**
+	 * The format of the thumbnails of the control panel.
+	 */
+	public string $thumbnailFormat = 'webp';
 
 	/**
 	 * Whether the thumbnails of the control panel use imgproxy, or are left to Craft.
@@ -62,18 +67,28 @@ final class Settings extends Model
 	 */
 	public function getFallbackFormat(): string
 	{
-		return $this->getSupportedFallbackFormat() ?? 'jpg';
+		return $this->getSupportedFormat($this->fallbackFormat) ?? 'jpg';
+	}
+
+	/**
+	 * The resolved thumbnail format, or WebP when it is invalid.
+	 */
+	public function getThumbnailFormat(): string
+	{
+		return $this->getSupportedFormat($this->thumbnailFormat) ?? 'webp';
 	}
 
 	/**
 	 * @internal Validation rule.
 	 */
-	public function validateFallbackFormat(string $attribute): void
+	public function validateFormat(string $attribute): void
 	{
-		if ($this->getSupportedFallbackFormat() === null) {
+		$value = $attribute === 'thumbnailFormat' ? $this->thumbnailFormat : $this->fallbackFormat;
+
+		if ($this->getSupportedFormat($value) === null) {
 			$this->addError($attribute, Craft::t('imgproxy', '{attribute} must be one of: {formats}.', [
 				'attribute' => $this->getAttributeLabel($attribute),
-				'formats' => implode(', ', self::FALLBACK_FORMATS),
+				'formats' => implode(', ', self::FORMATS),
 			]));
 		}
 	}
@@ -94,9 +109,9 @@ final class Settings extends Model
 	protected function defineRules(): array
 	{
 		return [
-			[['endpoint', 'signatureKey', 'signatureSalt', 'fallbackFormat'], 'trim'],
+			[['endpoint', 'signatureKey', 'signatureSalt', 'fallbackFormat', 'thumbnailFormat'], 'trim'],
 			[['endpoint'], 'validateEndpoint'],
-			[['fallbackFormat'], 'validateFallbackFormat'],
+			[['fallbackFormat', 'thumbnailFormat'], 'validateFormat'],
 			[['signatureKey', 'signatureSalt'], 'validateSignature'],
 		];
 	}
@@ -148,11 +163,11 @@ final class Settings extends Model
 		return $errors;
 	}
 
-	private function getSupportedFallbackFormat(): ?string
+	private function getSupportedFormat(string $value): ?string
 	{
-		$format = strtolower($this->resolve($this->fallbackFormat));
+		$format = strtolower($this->resolve($value));
 
-		return in_array($format, self::FALLBACK_FORMATS, true) ? $format : null;
+		return in_array($format, self::FORMATS, true) ? $format : null;
 	}
 
 	/**
@@ -178,6 +193,7 @@ final class Settings extends Model
 					'signatureKey',
 					'signatureSalt',
 					'fallbackFormat',
+					'thumbnailFormat',
 					'thumbnails',
 				],
 			],

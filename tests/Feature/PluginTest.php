@@ -209,6 +209,14 @@ describe('thumbnail URLs', function (): void {
 		expect(urlSource($url))->toBe('https://assets.example.test/image.jpg');
 	});
 
+	it('uses the thumbnail format', function (): void {
+		$this->settings(['thumbnailFormat' => 'avif']);
+
+		$url = Craft::$app->getAssets()->getThumbUrl($this->asset(), 120, 80);
+
+		expect(urlOptions($url))->toBe(['rs:fill:120:80:1', 'q:70', 'f:avif']);
+	});
+
 	it('leaves files that Craft does not know as images to Craft', function (): void {
 		$event = new DefineAssetThumbUrlEvent([
 			'asset' => $this->asset(['filename' => 'image.ico', 'kind' => Asset::KIND_UNKNOWN]),
