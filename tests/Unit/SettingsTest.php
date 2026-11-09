@@ -12,6 +12,7 @@ it('has no values by default', function (): void {
 	expect($settings->signatureKey)->toBeNull();
 	expect($settings->signatureSalt)->toBeNull();
 	expect($settings->fallbackFormat)->toBe('jpg');
+	expect($settings->thumbnails)->toBeTrue();
 });
 
 it('trims its values', function (): void {
@@ -31,7 +32,7 @@ it('parses environment variables in all of its values', function (): void {
 	$parser = (new Settings())->getBehavior('parser');
 
 	expect($parser)->toBeInstanceOf(EnvAttributeParserBehavior::class);
-	expect($parser instanceof EnvAttributeParserBehavior ? $parser->attributes : null)->toBe(['endpoint', 'signatureKey', 'signatureSalt', 'fallbackFormat']);
+	expect($parser instanceof EnvAttributeParserBehavior ? $parser->attributes : null)->toBe(['endpoint', 'signatureKey', 'signatureSalt', 'fallbackFormat', 'thumbnails']);
 });
 
 it('keeps references to environment variables', function (): void {
@@ -138,3 +139,18 @@ it('explains which fallback formats are supported', function (): void {
 
 	expect($settings->getFirstError('fallbackFormat'))->toBe('Fallback Format must be one of: jpg, png, webp, avif.');
 });
+
+it('enables thumbnails', function (bool|string $value, ?string $variable, bool $enabled): void {
+	if ($variable !== null) {
+		$this->env(['IMGPROXY_THUMBNAILS' => $variable]);
+	}
+
+	expect((new Settings(['thumbnails' => $value]))->isThumbnailsEnabled())->toBe($enabled);
+})->with([
+	'by default' => [true, null, true],
+	'disabled' => [false, null, false],
+	'disabled as a string' => ['0', null, false],
+	'enabled by a variable' => ['$IMGPROXY_THUMBNAILS', '1', true],
+	'disabled by a variable' => ['$IMGPROXY_THUMBNAILS', '0', false],
+	'an unset variable' => ['$IMGPROXY_THUMBNAILS_UNSET', null, true],
+]);

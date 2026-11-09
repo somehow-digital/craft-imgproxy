@@ -25,11 +25,24 @@ final class Settings extends Model
 	public string $fallbackFormat = 'jpg';
 
 	/**
+	 * Whether the thumbnails of the control panel use imgproxy, or are left to Craft.
+	 */
+	public bool|string $thumbnails = true;
+
+	/**
 	 * Whether the endpoint and the signature are usable, so the plugin can replace the URLs of Craft.
 	 */
 	public function isConfigured(): bool
 	{
 		return $this->getEndpointError() === null && $this->getSignatureErrors() === [];
+	}
+
+	/**
+	 * Whether imgproxy replaces the thumbnails of the control panel. An unset environment variable counts as enabled.
+	 */
+	public function isThumbnailsEnabled(): bool
+	{
+		return App::parseBooleanEnv($this->thumbnails) ?? true;
 	}
 
 	/**
@@ -165,6 +178,7 @@ final class Settings extends Model
 					'signatureKey',
 					'signatureSalt',
 					'fallbackFormat',
+					'thumbnails',
 				],
 			],
 		];

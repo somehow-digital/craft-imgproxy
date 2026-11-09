@@ -120,6 +120,7 @@ final class Plugin extends PluginBase
 			function (DefineAssetThumbUrlEvent $event): void {
 				if (
 					!$this->getSettings()->isConfigured()
+					|| !$this->getSettings()->isThumbnailsEnabled()
 					|| !$this->isSupported($event->asset)
 				) {
 					return;

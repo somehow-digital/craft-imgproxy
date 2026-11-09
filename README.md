@@ -31,7 +31,8 @@ composer require somehow-digital/craft-imgproxy
 2. Enter the **Endpoint** — the base URL of your imgproxy server.
 3. To enable URL signing, enter the **Signature Key** and **Signature Salt** (hex-encoded HMAC key and salt).
 4. Optionally, choose the **Fallback Format** (default: `jpg`) for sources that browsers can't display, such as HEIC and TIFF, when a transform has no format.
-5. Click **Save**.
+5. Optionally, turn off **Thumbnails** to let Craft generate the thumbnails of the Control Panel instead of imgproxy.
+6. Click **Save**.
 
 > **Tip:** All settings support environment variables. See [Environmental Configuration](https://craftcms.com/docs/5.x/configure.html#env) in the Craft CMS docs to learn more about that.
 
