@@ -131,3 +131,10 @@ it('validates the fallback format', function (string $format, bool $valid, strin
 	'unsupported' => ['heic', false, 'jpg'],
 	'empty' => ['', true, 'jpg'],
 ]);
+
+it('explains which fallback formats are supported', function (): void {
+	$settings = new Settings(['fallbackFormat' => 'heic']);
+	$settings->validate();
+
+	expect($settings->getFirstError('fallbackFormat'))->toBe('Fallback Format must be one of: jpg, png, webp, avif.');
+});

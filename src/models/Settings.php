@@ -49,9 +49,7 @@ final class Settings extends Model
 	 */
 	public function getFallbackFormat(): string
 	{
-		$format = strtolower($this->resolve($this->fallbackFormat));
-
-		return in_array($format, self::FALLBACK_FORMATS, true) ? $format : 'jpg';
+		return $this->getSupportedFallbackFormat() ?? 'jpg';
 	}
 
 	/**
@@ -59,7 +57,7 @@ final class Settings extends Model
 	 */
 	public function validateFallbackFormat(string $attribute): void
 	{
-		if (!in_array(strtolower($this->resolve($this->fallbackFormat)), self::FALLBACK_FORMATS, true)) {
+		if ($this->getSupportedFallbackFormat() === null) {
 			$this->addError($attribute, Craft::t('imgproxy', '{attribute} must be one of: {formats}.', [
 				'attribute' => $this->getAttributeLabel($attribute),
 				'formats' => implode(', ', self::FALLBACK_FORMATS),
@@ -135,6 +133,13 @@ final class Settings extends Model
 		}
 
 		return $errors;
+	}
+
+	private function getSupportedFallbackFormat(): ?string
+	{
+		$format = strtolower($this->resolve($this->fallbackFormat));
+
+		return in_array($format, self::FALLBACK_FORMATS, true) ? $format : null;
 	}
 
 	/**
