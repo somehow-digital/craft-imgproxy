@@ -9,7 +9,7 @@
 
 ### Changed
 
-- The signature key and salt must be hexadecimal strings, and set together.
+- The endpoint must be an HTTP or HTTPS URL, and the signature key and salt must be hexadecimal strings, and set together.
 - The `Plugin`, `Settings`, `BuilderService` and `GravityHelper` classes are final, so they can no longer be extended.
 - The `Builder` service is now `BuilderService`. The `builder` component and `Plugin::getBuilder()` are unchanged.
 - The `GravityUtility` class is now `GravityHelper`, and is internal.
@@ -19,7 +19,7 @@
 
 ### Fixed
 
-- An invalid signature, an empty endpoint or a signature with only a key or a salt no longer fail requests or produce broken URLs. The plugin leaves the URLs to Craft instead.
+- An invalid endpoint or signature, an empty endpoint or a signature with only a key or a salt no longer fail requests or produce broken URLs. The plugin leaves the URLs to Craft instead.
 - Sources browsers can't display, such as HEIC and TIFF, are converted to JPEG when the transform has no format, like Craft does. Before, imgproxy kept the source format.
 - Signed URLs are signed including the leading slash of their path, as imgproxy expects. Before, imgproxy rejected them.
 - Assets in volumes without public URLs, or with a relative base URL, are left to Craft. Before, the plugin built URLs from sources imgproxy can't fetch.
