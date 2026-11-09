@@ -29,7 +29,7 @@
 		"ext-ctype": "*",
 		"ext-filter": "*",
 		"craftcms/cms": "^5.8.0",
-		"somehow-digital/imgproxy": "^1.1.0"
+		"somehow-digital/imgproxy": "^1.1.1"
 	},
 	"require-dev": {
 		"craftcms/phpstan": "dev-main",
