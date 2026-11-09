@@ -5,6 +5,7 @@
 	id: 'endpoint',
 	name: 'endpoint',
 	value: settings.endpoint,
+	errors: settings.getErrors('endpoint'),
 	suggestEnvVars: true,
 }) }}
 
@@ -13,6 +14,7 @@
 	id: 'signatureKey',
 	name: 'signatureKey',
 	value: settings.signatureKey,
+	errors: settings.getErrors('signatureKey'),
 	suggestEnvVars: true,
 }) }}
 
@@ -21,5 +23,6 @@
 	id: 'signatureSalt',
 	name: 'signatureSalt',
 	value: settings.signatureSalt,
+	errors: settings.getErrors('signatureSalt'),
 	suggestEnvVars: true,
 }) }}

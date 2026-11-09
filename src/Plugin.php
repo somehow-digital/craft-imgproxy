@@ -90,7 +90,8 @@ final class Plugin extends PluginBase
 				$asset = $event->sender;
 
 				if (
-					!$asset instanceof Asset
+					!$this->getSettings()->isConfigured()
+					|| !$asset instanceof Asset
 					|| !Format::supports($asset->getExtension())
 				) {
 					return;
@@ -118,7 +119,10 @@ final class Plugin extends PluginBase
 			Assets::class,
 			Assets::EVENT_DEFINE_THUMB_URL,
 			function (DefineAssetThumbUrlEvent $event): void {
-				if (!Format::supports($event->asset->getExtension())) {
+				if (
+					!$this->getSettings()->isConfigured()
+					|| !Format::supports($event->asset->getExtension())
+				) {
 					return;
 				}
 
