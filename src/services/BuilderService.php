@@ -21,6 +21,7 @@ use SomehowDigital\ImgProxy\Option\Enlarge;
 use SomehowDigital\ImgProxy\Option\Extend;
 use SomehowDigital\ImgProxy\Option\Format;
 use SomehowDigital\ImgProxy\Option\Gravity;
+use SomehowDigital\ImgProxy\Option\GravityEnum;
 use SomehowDigital\ImgProxy\Option\GravityFocusPoint;
 use SomehowDigital\ImgProxy\Option\Height;
 use SomehowDigital\ImgProxy\Option\OptionInterface;
@@ -44,6 +45,7 @@ final class BuilderService extends Component
 
 		$options = array_filter([
 			$this->resize($transform),
+			$this->extend($transform),
 			$this->gravity($asset, $transform),
 			$this->background($transform),
 			$this->quality($transform),
@@ -67,17 +69,21 @@ final class BuilderService extends Component
 			default => ResizingTypeEnum::FILL,
 		};
 
-		$letterbox = $transform->mode === 'letterbox';
-		$upscale = $transform->upscale === true;
-
-		// Resize drops empty values, so every value before the last one needs to be set to keep its position.
 		return new Resize(
 			new ResizingType($resizingType),
 			new Width($transform->width ?? 0),
 			new Height($transform->height ?? 0),
-			($upscale || $letterbox) ? new Enlarge($upscale) : null,
-			$letterbox ? new Extend() : null,
+			$transform->upscale === true ? new Enlarge() : null,
 		);
+	}
+
+	private function extend(ImageTransform $transform): ?Extend
+	{
+		if ($transform->mode !== 'letterbox') {
+			return null;
+		}
+
+		return new Extend(true, $this->position($transform));
 	}
 
 	private function gravity(Asset $asset, ImageTransform $transform): ?OptionInterface
@@ -89,11 +95,14 @@ final class BuilderService extends Component
 			return new GravityFocusPoint($focus['x'], $focus['y']);
 		}
 
-		if ($transform->position !== 'center-center') {
-			return new Gravity(GravityHelper::mapPositionToGravity($transform->position));
-		}
+		return $this->position($transform);
+	}
 
-		return null;
+	private function position(ImageTransform $transform): ?Gravity
+	{
+		$gravity = GravityHelper::mapPositionToGravity($transform->position);
+
+		return $gravity === GravityEnum::CENTER ? null : new Gravity($gravity);
 	}
 
 	private function background(ImageTransform $transform): ?Background

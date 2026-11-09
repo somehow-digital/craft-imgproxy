@@ -107,8 +107,41 @@ describe('resize', function (): void {
 
 	it('fits and extends images for letterboxing', function (): void {
 		expect(urlOptions(imageUrl(['mode' => 'letterbox', 'width' => 300, 'height' => 200, 'upscale' => true])))
-			->toBe(['rs:fit:300:200:1:1', 'q:70']);
+			->toBe(['rs:fit:300:200:1', 'ex:1', 'q:70']);
 	});
+
+	it('positions letterboxed images', function (string $position, string $gravity): void {
+		expect(urlOptions(imageUrl(['mode' => 'letterbox', 'width' => 300, 'height' => 200, 'position' => $position, 'upscale' => false])))
+			->toBe(['rs:fit:300:200', "ex:1:{$gravity}", "g:{$gravity}", 'q:70']);
+	})->with([
+		['top-left', 'nowe'],
+		['top-center', 'no'],
+		['top-right', 'noea'],
+		['center-left', 'we'],
+		['center-right', 'ea'],
+		['bottom-left', 'sowe'],
+		['bottom-center', 'so'],
+		['bottom-right', 'soea'],
+	]);
+
+	it('centers letterboxed images for an invalid position', function (): void {
+		expect(urlOptions(imageUrl(['mode' => 'letterbox', 'width' => 300, 'height' => 200, 'position' => 'invalid', 'upscale' => false])))
+			->toBe(['rs:fit:300:200', 'ex:1', 'q:70']);
+	});
+
+	it('positions letterboxed images by the position instead of the focal point', function (): void {
+		$url = imageUrl(
+			['mode' => 'letterbox', 'width' => 300, 'height' => 200, 'position' => 'top-left', 'upscale' => false],
+			['focalPoint' => ['x' => 0.25, 'y' => 0.75]],
+		);
+
+		expect(urlOptions($url))->toBe(['rs:fit:300:200', 'ex:1:nowe', 'g:fp:0.25:0.75', 'q:70']);
+	});
+
+	it('does not extend images in other modes', function (string $mode): void {
+		expect(urlOptions(imageUrl(['mode' => $mode, 'width' => 300, 'height' => 200, 'position' => 'top-left'])))
+			->not->toContain('ex:1:nowe');
+	})->with(['crop', 'fit', 'stretch']);
 
 	it('resizes with only a width', function (): void {
 		expect(urlOptions(imageUrl(['width' => 300, 'upscale' => false])))->toBe(['rs:fill:300:0', 'q:70']);
@@ -122,9 +155,9 @@ describe('resize', function (): void {
 		expect(urlOptions(imageUrl(['height' => 200, 'upscale' => false])))->toBe(['rs:fill:0:200', 'q:70']);
 	});
 
-	it('keeps the position of the extend option when letterboxing without upscaling', function (): void {
+	it('does not enlarge letterboxed images without upscaling', function (): void {
 		expect(urlOptions(imageUrl(['mode' => 'letterbox', 'width' => 300, 'height' => 200, 'upscale' => false])))
-			->toBe(['rs:fit:300:200:0:1', 'q:70']);
+			->toBe(['rs:fit:300:200', 'ex:1', 'q:70']);
 	});
 });
 
@@ -211,7 +244,8 @@ describe('options', function (): void {
 		]);
 
 		expect(urlOptions($url))->toBe([
-			'rs:fit:300:200:1:1',
+			'rs:fit:300:200:1',
+			'ex:1:soea',
 			'g:soea',
 			'bg:00ff00',
 			'q:75',
