@@ -37,6 +37,10 @@ composer require somehow-digital/craft-imgproxy
 
 > **Tip:** All settings support environment variables. See [Environmental Configuration](https://craftcms.com/docs/5.x/configure.html#env) in the Craft CMS docs to learn more about that.
 
+## Support
+
+- 📖 Read the [documentation](https://craft-imgproxy.somehow-digital.dev).
+
 ---
 
 > [somehow digital.](https://somehow.digital)

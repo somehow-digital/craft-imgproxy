@@ -12,6 +12,8 @@
 - The `thumbnails` setting, which turns the imgproxy thumbnails of the control panel off, so Craft generates them. It is on by default.
 - The `thumbnailFormat` setting, which sets the format of the imgproxy thumbnails of the control panel. It defaults to `webp`.
 
+- A documentation site with guides and references at https://craft-imgproxy.somehow-digital.dev.
+
 ### Changed
 
 - Crops without upscaling use the `fill-down` resizing type, so imgproxy 3.0 or newer is required.
