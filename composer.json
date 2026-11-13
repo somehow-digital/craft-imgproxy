@@ -22,7 +22,7 @@
 		"email": "support@somehow.digital",
 		"issues": "https://github.com/somehow-digital/craft-imgproxy/issues",
 		"source": "https://github.com/somehow-digital/craft-imgproxy",
-		"docs": "https://github.com/somehow-digital/craft-imgproxy"
+		"docs": "https://craft-imgproxy.somehow-digital.dev"
 	},
 	"require": {
 		"php": "^8.2",
