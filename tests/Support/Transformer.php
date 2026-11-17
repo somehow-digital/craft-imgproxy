@@ -22,5 +22,8 @@ class Transformer implements ImageTransformerInterface
 		return 'https://transforms.example.test/' . $asset->getFilename();
 	}
 
-	public function invalidateAssetTransforms(Asset $asset): void {}
+	public function invalidateAssetTransforms(Asset $asset): void
+	{
+		// Nothing to invalidate, since it stores no transforms.
+	}
 }
