@@ -35,7 +35,7 @@
 - Letterboxed images are placed at the position of the transform. Before, they were always centered.
 - Files with an uppercase extension, such as `IMAGE.JPG`, are handled. Before, they were left to Craft.
 - Signed URLs are signed including the leading slash of their path, as imgproxy expects. Before, imgproxy rejected them.
-- Assets in volumes without public URLs, or with a relative base URL, are left to Craft. Before, the plugin built URLs from sources imgproxy can't fetch.
+- Assets in volumes without public URLs are left to Craft. Before, the plugin built URLs from sources imgproxy can't fetch.
 - Files that Craft doesn't know as images, such as ICO, are left to Craft. Before, requesting a transform of one failed.
 
 ### Removed

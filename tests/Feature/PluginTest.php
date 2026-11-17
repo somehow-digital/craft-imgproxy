@@ -151,13 +151,9 @@ describe('asset URLs', function (): void {
 		expect(definedUrl($this->asset(), ['width' => 300]))->toBeNull();
 	});
 
-	it('leaves URLs to Craft when the volume has no public URLs', function (?string $rootUrl): void {
-		expect(definedUrl($this->asset(['rootUrl' => $rootUrl]), ['width' => 300]))->toBeNull();
-	})->with([
-		'no URL' => [null],
-		'empty URL' => [''],
-		'relative URL' => ['/uploads/'],
-	]);
+	it('leaves URLs to Craft when the volume has no public URLs', function (): void {
+		expect(definedUrl($this->asset(['hasUrls' => false]), ['width' => 300]))->toBeNull();
+	});
 
 	it('leaves unknown transforms to Craft', function (): void {
 		fakeTransforms();
@@ -195,7 +191,7 @@ describe('thumbnail URLs', function (): void {
 	});
 
 	it('leaves thumbnails to Craft when the volume has no public URLs', function (): void {
-		$event = new DefineAssetThumbUrlEvent(['asset' => $this->asset(['rootUrl' => '']), 'width' => 120, 'height' => 80]);
+		$event = new DefineAssetThumbUrlEvent(['asset' => $this->asset(['hasUrls' => false]), 'width' => 120, 'height' => 80]);
 		Craft::$app->getAssets()->trigger(Assets::EVENT_DEFINE_THUMB_URL, $event);
 
 		expect($event->url)->toBeNull();
