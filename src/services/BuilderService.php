@@ -98,7 +98,7 @@ final class BuilderService extends Component
 		return Plugin::instance()->getSettings()->isConfigured()
 			&& $asset->kind === Asset::KIND_IMAGE
 			&& SupportedFormat::supports($asset->getExtension())
-			&& preg_match('#^https?://#i', (string) $asset->getVolume()->getRootUrl()) === 1;
+			&& $asset->getVolume()->getFs()->hasUrls;
 	}
 
 	private function resize(Asset $asset, ImageTransform $transform): ?Resize

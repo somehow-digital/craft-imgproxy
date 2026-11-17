@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SomehowDigital\Craft\ImgProxy\Tests\Support;
 
 use craft\elements\Asset as AssetElement;
+use craft\fs\Local;
 use craft\models\ImageTransform;
 use craft\models\Volume;
 
@@ -13,10 +14,12 @@ use craft\models\Volume;
  */
 class Asset extends AssetElement
 {
-	/**
-	 * The root URL of the volume, which is empty or missing when the volume has no public URLs.
-	 */
 	public ?string $rootUrl = 'https://assets.example.test/';
+
+	/**
+	 * Whether the filesystem of the volume has public URLs.
+	 */
+	public bool $hasUrls = true;
 
 	/**
 	 * The width and the height the asset reports for its source, which are both unknown or both known in Craft.
@@ -57,11 +60,13 @@ class Asset extends AssetElement
 
 	public function getVolume(): Volume
 	{
-		return new class ($this->rootUrl) extends Volume {
+		return new class ($this->rootUrl, $this->hasUrls) extends Volume {
 			public function __construct(
-				private readonly ?string $rootUrl
+				private readonly ?string $rootUrl,
+				bool $hasUrls,
 			) {
 				parent::__construct();
+				$this->setFs(new Local(['hasUrls' => $hasUrls]));
 			}
 
 			public function getRootUrl(): ?string
