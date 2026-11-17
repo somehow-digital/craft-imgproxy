@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use craft\services\Images;
 use SomehowDigital\Craft\ImgProxy\Tests\TestCase;
 
 pest()->extend(TestCase::class)->in('Unit', 'Feature');
@@ -56,4 +57,31 @@ function urlSegments(?string $url): array
 	}
 
 	return explode('/', ltrim((string) parse_url($url, PHP_URL_PATH), '/'));
+}
+
+/**
+ * Makes the formats the only ones Craft's image driver can open, whichever driver the host has.
+ *
+ * @param list<string> $formats
+ */
+function imageFormats(array $formats): void
+{
+	Craft::$app->set('images', new class ($formats) extends Images {
+		/**
+		 * @param list<string> $formats
+		 */
+		public function __construct(
+			private readonly array $formats,
+		) {
+			parent::__construct();
+		}
+
+		/**
+		 * @return list<string>
+		 */
+		public function getSupportedImageFormats(): array
+		{
+			return $this->formats;
+		}
+	});
 }

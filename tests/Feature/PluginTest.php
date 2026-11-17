@@ -5,13 +5,17 @@ declare(strict_types=1);
 use craft\elements\Asset;
 use craft\events\DefineAssetThumbUrlEvent;
 use craft\events\DefineAssetUrlEvent;
+use craft\imagetransforms\FallbackTransformer;
+use craft\imagetransforms\ImageTransformer;
 use craft\models\ImageTransform;
 use craft\services\Assets;
 use craft\services\ImageTransforms;
 use craft\web\View;
+use SomehowDigital\Craft\ImgProxy\imagetransforms\ImgproxyTransformer;
 use SomehowDigital\Craft\ImgProxy\models\Settings;
 use SomehowDigital\Craft\ImgProxy\Plugin;
 use SomehowDigital\Craft\ImgProxy\services\BuilderService;
+use SomehowDigital\Craft\ImgProxy\Tests\Support\Transformer;
 use yii\base\Event;
 
 /**
@@ -26,16 +30,38 @@ function definedUrl(Asset $asset, mixed $transform): ?string
 }
 
 /**
- * Makes `thumbnail` the only transform defined in the project.
+ * Makes `thumbnail` the only transform defined in the project, which is shared like Craft does.
  */
-function fakeTransforms(): void
+function fakeTransforms(): ImageTransform
 {
-	Craft::$app->set('imageTransforms', new class () extends ImageTransforms {
+	$thumbnail = new ImageTransform(['quality' => 60]);
+
+	Craft::$app->set('imageTransforms', new class ($thumbnail) extends ImageTransforms {
+		public function __construct(
+			private readonly ImageTransform $thumbnail,
+		) {
+			parent::__construct();
+		}
+
 		public function getTransformByHandle(string $handle): ?ImageTransform
 		{
-			return $handle === 'thumbnail' ? new ImageTransform(['quality' => 60]) : null;
+			return $handle === 'thumbnail' ? $this->thumbnail : null;
 		}
 	});
+
+	return $thumbnail;
+}
+
+/**
+ * Replaces the plugin's transformer, which needs a database, with one that records the transform it is asked for.
+ */
+function fakeTransformer(): Transformer
+{
+	$transformer = new Transformer();
+
+	Craft::$container->set(ImgproxyTransformer::class, static fn(): Transformer => $transformer);
+
+	return $transformer;
 }
 
 it('registers the alias', function (): void {
@@ -50,6 +76,10 @@ it('initializes like a Craft plugin', function (): void {
 	expect(Plugin::instance()->hasReadOnlyCpSettings)->toBeTrue();
 });
 
+it('registers the transformer in place of the one of Craft', function (): void {
+	expect(Craft::createObject(ImageTransformer::class))->toBeInstanceOf(ImgproxyTransformer::class);
+});
+
 it('has settings', function (): void {
 	expect(Plugin::instance()->hasCpSettings)->toBeTrue();
 	expect(Plugin::instance()->getSettings())->toBeInstanceOf(Settings::class);
@@ -61,7 +91,19 @@ it('renders the settings', function (): void {
 
 	$html = (new ReflectionMethod(Plugin::class, 'settingsHtml'))->invoke(Plugin::instance());
 
-	expect($html)->toContain('id="endpoint-field"', 'id="signatureKey-field"', 'id="signatureSalt-field"', 'value="https://imgproxy.example.test"');
+	expect($html)->toContain(
+		'id="endpoint-field"',
+		'id="signatureKey-field"',
+		'id="signatureSalt-field"',
+		'id="mode-field"',
+		'id="transforms-field"',
+		'id="fallbackFormat-field"',
+		'id="thumbnails-field"',
+		'id="thumbnailFormat-field"',
+		'value="https://imgproxy.example.test"',
+		'<option value="store"',
+		'<option value="avif"',
+	);
 });
 
 describe('asset URLs', function (): void {
@@ -162,6 +204,45 @@ describe('asset URLs', function (): void {
 	});
 });
 
+describe('transforms', function (): void {
+	it('leaves transforms to Craft when they are disabled', function (): void {
+		$this->settings(['transforms' => false]);
+
+		expect(definedUrl($this->asset(), ['width' => 300]))->toBeNull();
+	});
+
+	it('does not change the transforms defined in the project', function (): void {
+		$thumbnail = fakeTransforms();
+
+		$this->asset(['filename' => 'image.heic'])->getUrl('thumbnail');
+
+		expect($thumbnail->format)->toBeNull();
+	});
+
+	it('leaves transforms of other transformers to Craft', function (): void {
+		$transform = new ImageTransform(['width' => 300]);
+		$transform->setTransformer(FallbackTransformer::class);
+
+		expect(definedUrl($this->asset(), $transform))->toBeNull();
+	});
+
+	it("leaves the transforms to Craft in the store mode, which stores them with the plugin's transformer", function (): void {
+		$this->settings(['mode' => 'store']);
+
+		expect(definedUrl($this->asset(), ['width' => 300]))->toBeNull();
+	});
+
+	it('serves the files Craft cannot open from imgproxy in the store mode', function (): void {
+		imageFormats(['jpg']);
+		$this->settings(['mode' => 'store']);
+
+		$url = definedUrl($this->asset(['filename' => 'image.heic']), ['width' => 300]);
+
+		expect($url)->toStartWith('https://imgproxy.example.test/_/');
+		expect(urlOptions($url))->toContain('f:jpg');
+	});
+});
+
 describe('thumbnail URLs', function (): void {
 	it('leaves thumbnails to Craft when the plugin is not configured', function (): void {
 		$this->settings(['endpoint' => null]);
@@ -235,5 +316,27 @@ describe('thumbnail URLs', function (): void {
 		Craft::$app->getAssets()->trigger(Assets::EVENT_DEFINE_THUMB_URL, $event);
 
 		expect($event->url)->toBeNull();
+	});
+
+	it('defines the URL of a thumbnail when the transforms are disabled', function (): void {
+		$this->settings(['transforms' => false]);
+
+		expect(Craft::$app->getAssets()->getThumbUrl($this->asset(), 120, 80))->toStartWith('https://imgproxy.example.test/_/');
+	});
+
+	it("has the plugin's transformer generate the thumbnails in the store mode", function (): void {
+		$this->settings(['mode' => 'store']);
+		$transformer = fakeTransformer();
+
+		expect(Craft::$app->getAssets()->getThumbUrl($this->asset(['folderId' => 1]), 120, 80))->toBe('https://transforms.example.test/image.jpg');
+		expect($transformer->transform?->getTransformer())->toBe(ImgproxyTransformer::class);
+		expect($transformer->transform?->format)->toBe('webp');
+	});
+
+	it('serves the thumbnails of files Craft cannot open from imgproxy in the store mode', function (): void {
+		imageFormats(['jpg']);
+		$this->settings(['mode' => 'store']);
+
+		expect(Craft::$app->getAssets()->getThumbUrl($this->asset(['filename' => 'image.heic']), 120, 80))->toStartWith('https://imgproxy.example.test/_/');
 	});
 });

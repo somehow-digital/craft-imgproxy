@@ -4,12 +4,14 @@
 # some layers may reach. Unlisted framework and package code is open to every layer. `deptrac debug:unassigned` fails
 # for plugin classes outside any layer. Class rules (base classes, naming) live in tests/PHPStan/ArchitectureRules.php.
 #
-# Dependencies point inwards and never back, except that the services reach the plugin's settings through the plugin, as
-# Craft does with `Plugin::getInstance()`. Deptrac can't see service locator calls such as `Craft::$app->getConfig()`.
+# Dependencies point inwards and never back, except that the services and the transformers reach the plugin's settings
+# and services through the plugin, as Craft does with `Plugin::getInstance()`. Deptrac can't see service locator calls
+# such as `Craft::$app->getConfig()`.
 #
 #   Plugin           the composition root, registering components and event handlers
 #   Application
 #     Services       components that hold the logic                  services
+#     Transformers   Craft's transformer, generating with imgproxy   imagetransforms
 #   Domain
 #     Models         settings                                        models
 #   Leaves
@@ -41,6 +43,11 @@ deptrac:
       collectors:
         - type: classNameRegex
           value: '#^%plugin%\\services\\#'
+
+    - name: ImageTransformers
+      collectors:
+        - type: classNameRegex
+          value: '#^%plugin%\\imagetransforms\\#'
 
     - name: Models
       collectors:
@@ -93,10 +100,13 @@ deptrac:
 
   ruleset:
     # Registers everything, and listens to the events of Craft.
-    Plugin: [Services, Models, Helpers, YiiEvent, CraftServices]
+    Plugin: [Services, ImageTransformers, Models, Helpers, YiiEvent, CraftServices]
 
-    # Services get their settings through the plugin.
-    Services: [Plugin, Models, Helpers, ImgProxySdk]
+    # Services get their settings through the plugin, and hand transforms to the transformer.
+    Services: [Plugin, ImageTransformers, Models, Helpers, ImgProxySdk]
+
+    # The transformer gets the builder through the plugin.
+    ImageTransformers: [Plugin, Services]
 
     # The domain depends only on itself and the leaves.
     Models: ~

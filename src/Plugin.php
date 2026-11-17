@@ -9,14 +9,16 @@ use craft\base\Plugin as PluginBase;
 use craft\elements\Asset;
 use craft\events\DefineAssetThumbUrlEvent;
 use craft\events\DefineAssetUrlEvent;
+use craft\imagetransforms\ImageTransformer;
 use craft\services\Assets;
+use SomehowDigital\Craft\ImgProxy\imagetransforms\ImgproxyTransformer;
 use SomehowDigital\Craft\ImgProxy\models\Settings;
 use SomehowDigital\Craft\ImgProxy\services\BuilderService;
 use yii\base\Event;
 use yii\base\InvalidConfigException;
 
 /**
- * Registers the builder and replaces the URLs of assets, and their thumbnails, with imgproxy URLs.
+ * Registers the builder and the transformer, and has imgproxy transform the images of assets.
  *
  * @method Settings getSettings()
  */
@@ -49,6 +51,7 @@ final class Plugin extends PluginBase
 		parent::init();
 
 		$this->registerAliases();
+		$this->registerTransformer();
 		$this->registerAssetHandler();
 		$this->registerThumbnailHandler();
 	}
@@ -75,6 +78,14 @@ final class Plugin extends PluginBase
 	private function registerAliases(): void
 	{
 		Craft::setAlias('@imgproxy', $this->getBasePath());
+	}
+
+	/**
+	 * Craft creates its transformer by name for deferred transforms, so the container hands out this plugin's instead.
+	 */
+	private function registerTransformer(): void
+	{
+		Craft::$container->set(ImageTransformer::class, ImgproxyTransformer::class);
 	}
 
 	private function registerAssetHandler(): void
