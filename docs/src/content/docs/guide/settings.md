@@ -11,10 +11,29 @@ description: Point Craft at your imgproxy server.
 | **Endpoint**         |   Yes    | The base URL of your imgproxy server, an HTTP or HTTPS URL.                                                          |
 | **Signature Key**    |          | The hex-encoded HMAC key. Set it together with the salt, see [signing](/features/signing/).                          |
 | **Signature Salt**   |          | The hex-encoded HMAC salt. Set it together with the key.                                                             |
+| **Mode**             |          | `proxy` (default) or `store`, for the transforms and the thumbnails, see [modes](/features/modes/).                  |
+| **Transforms**       |          | On by default. Turn it off to let Craft generate the image transforms.                                               |
 | **Fallback Format**  |          | `jpg` (default), `png`, `webp` or `avif`, for sources browsers can't display, such as HEIC and TIFF, with no format. |
-| **Thumbnails**       |          | On by default. Turn it off to let Craft generate the thumbnails, see [thumbnails](/features/thumbnails/).            |
+| **Thumbnails**       |          | On by default. Turn it off to handle the thumbnails like the transforms, see [thumbnails](/features/thumbnails/).    |
 | **Thumbnail Format** |          | `webp` (default), `jpg`, `png` or `avif`.                                                                            |
 
 :::tip
 All settings support [environment variables](https://craftcms.com/docs/5.x/configure.html#env).
 :::
+
+## Config file
+
+Set the settings in `config/imgproxy.php` to keep them out of the database:
+
+```php
+<?php
+
+return [
+	'endpoint' => '$IMGPROXY_ENDPOINT',
+	'mode' => 'store',
+	'transforms' => true,
+	'fallbackFormat' => 'jpg',
+	'thumbnails' => true,
+	'thumbnailFormat' => 'webp',
+];
+```

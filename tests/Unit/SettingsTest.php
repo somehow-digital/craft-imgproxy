@@ -11,9 +11,11 @@ it('has no values by default', function (): void {
 	expect($settings->endpoint)->toBeNull();
 	expect($settings->signatureKey)->toBeNull();
 	expect($settings->signatureSalt)->toBeNull();
+	expect($settings->mode)->toBe('proxy');
+	expect($settings->transforms)->toBeTrue();
 	expect($settings->fallbackFormat)->toBe('jpg');
-	expect($settings->thumbnailFormat)->toBe('webp');
 	expect($settings->thumbnails)->toBeTrue();
+	expect($settings->thumbnailFormat)->toBe('webp');
 });
 
 it('trims its values', function (): void {
@@ -33,7 +35,16 @@ it('parses environment variables in all of its values', function (): void {
 	$parser = (new Settings())->getBehavior('parser');
 
 	expect($parser)->toBeInstanceOf(EnvAttributeParserBehavior::class);
-	expect($parser instanceof EnvAttributeParserBehavior ? $parser->attributes : null)->toBe(['endpoint', 'signatureKey', 'signatureSalt', 'fallbackFormat', 'thumbnailFormat', 'thumbnails']);
+	expect($parser instanceof EnvAttributeParserBehavior ? $parser->attributes : null)->toBe([
+		'endpoint',
+		'signatureKey',
+		'signatureSalt',
+		'mode',
+		'transforms',
+		'fallbackFormat',
+		'thumbnailFormat',
+		'thumbnails',
+	]);
 });
 
 it('keeps references to environment variables', function (): void {
@@ -151,27 +162,12 @@ it('validates the fallback format', function (string $format, bool $valid, strin
 	'empty' => ['', true, 'jpg'],
 ]);
 
-it('explains which fallback formats are supported', function (): void {
+it('explains which formats are supported', function (): void {
 	$settings = new Settings(['fallbackFormat' => 'heic']);
 	$settings->validate();
 
 	expect($settings->getFirstError('fallbackFormat'))->toBe('Fallback Format must be one of: jpg, png, webp, avif.');
 });
-
-it('enables thumbnails', function (bool|string $value, ?string $variable, bool $enabled): void {
-	if ($variable !== null) {
-		$this->env(['IMGPROXY_THUMBNAILS' => $variable]);
-	}
-
-	expect((new Settings(['thumbnails' => $value]))->isThumbnailsEnabled())->toBe($enabled);
-})->with([
-	'by default' => [true, null, true],
-	'disabled' => [false, null, false],
-	'disabled as a string' => ['0', null, false],
-	'enabled by a variable' => ['$IMGPROXY_THUMBNAILS', '1', true],
-	'disabled by a variable' => ['$IMGPROXY_THUMBNAILS', '0', false],
-	'an unset variable' => ['$IMGPROXY_THUMBNAILS_UNSET', null, true],
-]);
 
 it('validates the thumbnail format', function (string $format, bool $valid, string $resolved): void {
 	$settings = new Settings(['thumbnailFormat' => $format]);
@@ -193,4 +189,52 @@ it('names the invalid format attribute in its error', function (): void {
 	$settings->validate();
 
 	expect($settings->getFirstError('thumbnailFormat'))->toBe('Thumbnail Format must be one of: jpg, png, webp, avif.');
+});
+
+it('enables imgproxy', function (string $attribute, Closure $enabled): void {
+	$cases = [
+		'by default' => [true, null, true],
+		'disabled' => [false, null, false],
+		'disabled as a string' => ['0', null, false],
+		'enabled by a variable' => ['$IMGPROXY_ENABLED', '1', true],
+		'disabled by a variable' => ['$IMGPROXY_DISABLED', '0', false],
+		'an unset variable' => ['$IMGPROXY_UNSET', null, true],
+	];
+
+	foreach ($cases as $case => [$value, $variable, $expected]) {
+		if ($variable !== null) {
+			$this->env([substr((string) $value, 1) => $variable]);
+		}
+
+		expect($enabled(new Settings([$attribute => $value])))->toBe($expected, $case);
+	}
+})->with([
+	'transforms' => ['transforms', fn(Settings $settings): bool => $settings->isTransformsEnabled()],
+	'thumbnails' => ['thumbnails', fn(Settings $settings): bool => $settings->isThumbnailsEnabled()],
+]);
+
+it('validates the mode', function (string $mode, bool $valid, string $resolved): void {
+	$settings = new Settings(['mode' => $mode]);
+
+	expect($settings->validate())->toBe($valid);
+	expect($settings->getMode())->toBe($resolved);
+})->with([
+	'proxy' => ['proxy', true, 'proxy'],
+	'store' => ['store', true, 'store'],
+	'uppercase' => [' STORE ', true, 'store'],
+	'unsupported' => ['cache', false, 'proxy'],
+	'empty' => ['', true, 'proxy'],
+]);
+
+it('resolves the mode from an environment variable', function (): void {
+	$this->env(['IMGPROXY_MODE' => 'store']);
+
+	expect((new Settings(['mode' => '$IMGPROXY_MODE']))->getMode())->toBe('store');
+});
+
+it('explains which modes are supported', function (): void {
+	$settings = new Settings(['mode' => 'cache']);
+	$settings->validate();
+
+	expect($settings->getFirstError('mode'))->toBe('Mode must be one of: proxy, store.');
 });

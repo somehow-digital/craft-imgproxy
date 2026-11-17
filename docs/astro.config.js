@@ -33,7 +33,7 @@ export default defineConfig({
 				},
 				{
 					label: 'Features',
-					items: ['features/signing', 'features/thumbnails'],
+					items: ['features/modes', 'features/signing', 'features/thumbnails'],
 				},
 			],
 			social: [

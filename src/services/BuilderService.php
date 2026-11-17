@@ -13,6 +13,8 @@ use craft\helpers\ImageTransforms;
 use craft\models\ImageTransform;
 use DateTime;
 use SomehowDigital\Craft\ImgProxy\helpers\GravityHelper;
+use SomehowDigital\Craft\ImgProxy\imagetransforms\ImgproxyTransformer;
+use SomehowDigital\Craft\ImgProxy\models\Settings;
 use SomehowDigital\Craft\ImgProxy\Plugin;
 use SomehowDigital\ImgProxy\Masker\EncodingMasker;
 use SomehowDigital\ImgProxy\Option\Background;
@@ -50,7 +52,7 @@ final class BuilderService extends Component
 			$this->gravity($asset, $transform),
 			$this->background($transform),
 			$this->quality($transform),
-			$this->format($asset, $transform),
+			$this->format($transform),
 			$this->cacheBuster($asset),
 		], static fn(?OptionInterface $option): bool => $option instanceof OptionInterface);
 
@@ -58,25 +60,19 @@ final class BuilderService extends Component
 	}
 
 	/**
-	 * The URL for an asset and a transform in any form Craft accepts, or null when Craft is to generate it.
+	 * The imgproxy URL for an asset and a transform in any form Craft accepts, or null when Craft is to handle it.
+	 *
+	 * In the `store` mode, Craft handles it with this plugin's transformer, see getStoredTransform().
 	 */
 	public function getAssetUrl(Asset $asset, mixed $transform): ?string
 	{
-		if (!$this->supports($asset)) {
-			return null;
-		}
-
-		try {
-			$transform = ImageTransforms::normalizeTransform($transform);
-		} catch (ImageTransformException) {
-			return null;
-		}
+		$transform = $this->resolve($asset, $transform, false);
 
 		return $transform instanceof ImageTransform ? $this->getUrl($asset, $transform) : null;
 	}
 
 	/**
-	 * The URL of a control panel thumbnail, or null when Craft is to generate it.
+	 * The URL of a control panel thumbnail, or null when Craft is to handle it.
 	 */
 	public function getThumbnailUrl(Asset $asset, int $width, int $height): ?string
 	{
@@ -86,11 +82,78 @@ final class BuilderService extends Component
 			return null;
 		}
 
-		return $this->getUrl($asset, new ImageTransform([
+		$transform = new ImageTransform([
 			'width' => $width,
 			'height' => $height,
 			'format' => $settings->getThumbnailFormat(),
-		]));
+		]);
+
+		if (!$this->stores($asset)) {
+			return $this->getUrl($asset, $transform);
+		}
+
+		$transform->setTransformer(ImgproxyTransformer::class);
+
+		return $asset->getUrl($transform);
+	}
+
+	/**
+	 * The transform for this plugin's transformer to have imgproxy generate and Craft store, or null when Craft
+	 * generates it.
+	 *
+	 * @internal Used by the transformer.
+	 */
+	public function getStoredTransform(Asset $asset, ImageTransform $transform): ?ImageTransform
+	{
+		$transform = $this->resolve($asset, $transform, true);
+		$transform?->setTransformer(ImgproxyTransformer::class);
+
+		return $transform;
+	}
+
+	/**
+	 * A copy of the transform with the fallback format, or null when imgproxy does not handle it, or not as stored.
+	 */
+	private function resolve(Asset $asset, mixed $transform, bool $stored): ?ImageTransform
+	{
+		if (!Plugin::instance()->getSettings()->isTransformsEnabled() || $this->stores($asset) !== $stored || !$this->supports($asset)) {
+			return null;
+		}
+
+		$transform = $this->normalize($transform);
+
+		if ($transform instanceof ImageTransform) {
+			$transform->format ??= $this->fallbackFormat($asset);
+		}
+
+		return $transform;
+	}
+
+	/**
+	 * Whether Craft stores the transforms of the asset, which it only does for files its image driver can open.
+	 * imgproxy serves the others.
+	 */
+	private function stores(Asset $asset): bool
+	{
+		return Plugin::instance()->getSettings()->getMode() === Settings::MODE_STORE
+			&& Image::canManipulateAsImage($asset->getExtension());
+	}
+
+	/**
+	 * A copy of the transform, since Craft shares the transforms defined in the project, or null when it is unknown or
+	 * for another transformer, such as Craft's fallback transformer for thumbnails.
+	 */
+	private function normalize(mixed $transform): ?ImageTransform
+	{
+		try {
+			$transform = ImageTransforms::normalizeTransform($transform);
+		} catch (ImageTransformException) {
+			return null;
+		}
+
+		return $transform instanceof ImageTransform && $transform->getTransformer() === ImageTransform::DEFAULT_TRANSFORMER
+			? clone $transform
+			: null;
 	}
 
 	private function supports(Asset $asset): bool
@@ -190,16 +253,19 @@ final class BuilderService extends Component
 		return new Quality($transform->quality ?? Craft::$app->getConfig()->getGeneral()->defaultImageQuality);
 	}
 
-	private function format(Asset $asset, ImageTransform $transform): ?Format
+	private function format(ImageTransform $transform): ?Format
 	{
-		if ($transform->format !== null) {
-			return new Format($transform->format);
-		}
+		return $transform->format === null ? null : new Format($transform->format);
+	}
 
-		// imgproxy keeps the source format, while Craft converts sources that browsers can't display to JPEG.
+	/**
+	 * imgproxy keeps the source format, while Craft converts sources that browsers can't display to JPEG.
+	 */
+	private function fallbackFormat(Asset $asset): ?string
+	{
 		return Image::isWebSafe($asset->getExtension())
 			? null
-			: new Format(Plugin::instance()->getSettings()->getFallbackFormat());
+			: Plugin::instance()->getSettings()->getFallbackFormat();
 	}
 
 	private function cacheBuster(Asset $asset): ?CacheBuster

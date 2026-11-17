@@ -22,6 +22,11 @@ class Asset extends AssetElement
 	public bool $hasUrls = true;
 
 	/**
+	 * The path of the filesystem of the volume, which stores the transforms too.
+	 */
+	public ?string $path = null;
+
+	/**
 	 * The width and the height the asset reports for its source, which are both unknown or both known in Craft.
 	 *
 	 * @var array{0:int|null,1:int|null}|null
@@ -60,13 +65,14 @@ class Asset extends AssetElement
 
 	public function getVolume(): Volume
 	{
-		return new class ($this->rootUrl, $this->hasUrls) extends Volume {
+		return new class ($this->rootUrl, $this->hasUrls, $this->path) extends Volume {
 			public function __construct(
 				private readonly ?string $rootUrl,
 				bool $hasUrls,
+				?string $path,
 			) {
 				parent::__construct();
-				$this->setFs(new Local(['hasUrls' => $hasUrls]));
+				$this->setFs(new Local(['hasUrls' => $hasUrls, 'path' => $path]));
 			}
 
 			public function getRootUrl(): ?string

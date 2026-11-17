@@ -6,10 +6,12 @@
 
 - `Settings::isConfigured()`, which tells whether the endpoint is set and the signature is valid.
 - `Settings::getEndpoint()`, `Settings::getSignatureKey()` and `Settings::getSignatureSalt()`, which return the values with environment variables and aliases resolved.
-- `BuilderService::getAssetUrl()` and `BuilderService::getThumbnailUrl()`, which return the imgproxy URL, or null when Craft is to generate it.
+- `BuilderService::getAssetUrl()` and `BuilderService::getThumbnailUrl()`, which return the URL of a transform or thumbnail, or null when Craft is to handle it.
 - `Plugin::instance()`, which returns the plugin, or throws when it is not loaded.
+- The `mode` setting. `proxy`, the default, points the URLs to imgproxy. `store` has imgproxy generate the transforms and thumbnails, which Craft stores in the transform filesystem and serves like its own.
+- The `transforms` setting, which turns the imgproxy transforms off, so Craft generates them. It is on by default.
 - The `fallbackFormat` setting, which sets the format for sources that browsers can't display when a transform has none. It defaults to `jpg`, like Craft.
-- The `thumbnails` setting, which turns the imgproxy thumbnails of the control panel off, so Craft generates them. It is on by default.
+- The `thumbnails` setting, which turns the imgproxy thumbnails of the control panel off, so they are handled like the transforms. It is on by default.
 - The `thumbnailFormat` setting, which sets the format of the imgproxy thumbnails of the control panel. It defaults to `webp`.
 
 - A documentation site with guides and references at https://craft-imgproxy.somehow-digital.dev.

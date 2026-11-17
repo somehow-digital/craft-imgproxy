@@ -27,22 +27,49 @@
 	suggestEnvVars: true,
 }) }}
 
-{{ forms.autosuggestField({
+{{ forms.selectizeField({
+	label: 'Mode'|t('imgproxy'),
+	instructions: '`proxy` serves the images from imgproxy. `store` has imgproxy generate them, and Craft store and serve them.'|t('imgproxy'),
+	id: 'mode',
+	name: 'mode',
+	value: settings.mode,
+	errors: settings.getErrors('mode'),
+	options: [
+		{label: 'Proxy'|t('imgproxy'), value: 'proxy'},
+		{label: 'Store'|t('imgproxy'), value: 'store'},
+	],
+	includeEnvVars: true,
+}) }}
+
+{{ forms.booleanMenuField({
+	label: 'Transforms'|t('imgproxy'),
+	instructions: 'Whether imgproxy generates the image transforms, or Craft does.'|t('imgproxy'),
+	id: 'transforms',
+	name: 'transforms',
+	value: settings.transforms,
+	includeEnvVars: true,
+	errors: settings.getErrors('transforms'),
+}) }}
+
+{{ forms.selectizeField({
 	label: 'Fallback Format'|t('imgproxy'),
 	instructions: 'The format for sources that browsers can\'t display, such as HEIC and TIFF, when a transform has no format.'|t('imgproxy'),
 	id: 'fallbackFormat',
 	name: 'fallbackFormat',
 	value: settings.fallbackFormat,
 	errors: settings.getErrors('fallbackFormat'),
-	suggestions: [{label: 'Formats'|t('imgproxy'), data: [
-		{name: 'jpg'}, {name: 'png'}, {name: 'webp'}, {name: 'avif'},
-	]}],
-	suggestEnvVars: true,
+	options: [
+		{label: 'JPEG', value: 'jpg'},
+		{label: 'PNG', value: 'png'},
+		{label: 'WebP', value: 'webp'},
+		{label: 'AVIF', value: 'avif'},
+	],
+	includeEnvVars: true,
 }) }}
 
 {{ forms.booleanMenuField({
 	label: 'Thumbnails'|t('imgproxy'),
-	instructions: 'Whether imgproxy generates the thumbnails of the control panel, or Craft does.'|t('imgproxy'),
+	instructions: 'Whether imgproxy generates the thumbnails of the control panel, or they are handled like the image transforms.'|t('imgproxy'),
 	id: 'thumbnails',
 	name: 'thumbnails',
 	value: settings.thumbnails,
@@ -50,15 +77,18 @@
 	errors: settings.getErrors('thumbnails'),
 }) }}
 
-{{ forms.autosuggestField({
+{{ forms.selectizeField({
 	label: 'Thumbnail Format'|t('imgproxy'),
 	instructions: 'The format of the thumbnails of the control panel.'|t('imgproxy'),
 	id: 'thumbnailFormat',
 	name: 'thumbnailFormat',
 	value: settings.thumbnailFormat,
 	errors: settings.getErrors('thumbnailFormat'),
-	suggestions: [{label: 'Formats'|t('imgproxy'), data: [
-		{name: 'webp'}, {name: 'avif'}, {name: 'jpg'}, {name: 'png'},
-	]}],
-	suggestEnvVars: true,
+	options: [
+		{label: 'JPEG', value: 'jpg'},
+		{label: 'PNG', value: 'png'},
+		{label: 'WebP', value: 'webp'},
+		{label: 'AVIF', value: 'avif'},
+	],
+	includeEnvVars: true,
 }) }}

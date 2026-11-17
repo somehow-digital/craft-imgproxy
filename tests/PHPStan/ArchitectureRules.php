@@ -6,6 +6,7 @@ namespace SomehowDigital\Craft\ImgProxy\Tests\PHPStan;
 
 use craft\base\Model;
 use craft\base\Plugin;
+use craft\imagetransforms\ImageTransformer;
 use PHPat\Selector\Selector;
 use PHPat\Selector\SelectorInterface;
 use PHPat\Test\Attributes\TestRule;
@@ -31,12 +32,14 @@ final class ArchitectureRules
 	 */
 	private const LAYERS = [
 		'helpers' => ['base' => null, 'suffix' => 'Helper'],
+		'imagetransforms' => ['base' => ImageTransformer::class, 'suffix' => 'Transformer'],
 		'models' => ['base' => null, 'suffix' => null],
 		'services' => ['base' => Component::class, 'suffix' => 'Service'],
 	];
 
 	/** Created by Yii from config, so the plugin registers rather than constructs them. */
 	private const COMPONENTS = [
+		'imagetransforms',
 		'services',
 	];
 

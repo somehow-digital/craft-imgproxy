@@ -11,13 +11,35 @@ use craft\helpers\App;
 
 final class Settings extends Model
 {
+	/**
+	 * imgproxy serves the transforms, so their URLs point to it.
+	 */
+	public const MODE_PROXY = 'proxy';
+
+	/**
+	 * imgproxy generates the transforms, which Craft stores and serves like its own.
+	 */
+	public const MODE_STORE = 'store';
+
 	private const FORMATS = ['jpg', 'png', 'webp', 'avif'];
+
+	private const MODES = [self::MODE_PROXY, self::MODE_STORE];
 
 	public ?string $endpoint = null;
 
 	public ?string $signatureKey = null;
 
 	public ?string $signatureSalt = null;
+
+	/**
+	 * How imgproxy transforms the images, `proxy` or `store`.
+	 */
+	public string $mode = self::MODE_PROXY;
+
+	/**
+	 * Whether imgproxy generates the image transforms, or Craft does.
+	 */
+	public bool|string $transforms = true;
 
 	/**
 	 * The format for sources that browsers can't display, such as HEIC and TIFF, when the transform has none.
@@ -30,7 +52,7 @@ final class Settings extends Model
 	public string $thumbnailFormat = 'webp';
 
 	/**
-	 * Whether the thumbnails of the control panel use imgproxy, or are left to Craft.
+	 * Whether imgproxy generates the thumbnails of the control panel, or they are handled like the image transforms.
 	 */
 	public bool|string $thumbnails = true;
 
@@ -67,7 +89,23 @@ final class Settings extends Model
 	}
 
 	/**
-	 * Whether imgproxy replaces the thumbnails of the control panel. An unset environment variable counts as enabled.
+	 * The resolved mode, or `proxy` when it is invalid.
+	 */
+	public function getMode(): string
+	{
+		return $this->getSupported($this->mode, self::MODES) ?? self::MODE_PROXY;
+	}
+
+	/**
+	 * Whether imgproxy generates the image transforms. An unset environment variable counts as enabled.
+	 */
+	public function isTransformsEnabled(): bool
+	{
+		return App::parseBooleanEnv($this->transforms) ?? true;
+	}
+
+	/**
+	 * Whether imgproxy generates the thumbnails of the control panel. An unset environment variable counts as enabled.
 	 */
 	public function isThumbnailsEnabled(): bool
 	{
@@ -91,7 +129,7 @@ final class Settings extends Model
 	 */
 	public function getFallbackFormat(): string
 	{
-		return $this->getSupportedFormat($this->fallbackFormat) ?? 'jpg';
+		return $this->getSupported($this->fallbackFormat, self::FORMATS) ?? 'jpg';
 	}
 
 	/**
@@ -99,7 +137,7 @@ final class Settings extends Model
 	 */
 	public function getThumbnailFormat(): string
 	{
-		return $this->getSupportedFormat($this->thumbnailFormat) ?? 'webp';
+		return $this->getSupported($this->thumbnailFormat, self::FORMATS) ?? 'webp';
 	}
 
 	/**
@@ -109,12 +147,15 @@ final class Settings extends Model
 	{
 		$value = $attribute === 'thumbnailFormat' ? $this->thumbnailFormat : $this->fallbackFormat;
 
-		if ($this->getSupportedFormat($value) === null) {
-			$this->addError($attribute, Craft::t('imgproxy', '{attribute} must be one of: {formats}.', [
-				'attribute' => $this->getAttributeLabel($attribute),
-				'formats' => implode(', ', self::FORMATS),
-			]));
-		}
+		$this->validateSupported($attribute, $value, self::FORMATS);
+	}
+
+	/**
+	 * @internal Validation rule.
+	 */
+	public function validateMode(string $attribute): void
+	{
+		$this->validateSupported($attribute, $this->mode, self::MODES);
 	}
 
 	/**
@@ -133,8 +174,9 @@ final class Settings extends Model
 	protected function defineRules(): array
 	{
 		return [
-			[['endpoint', 'signatureKey', 'signatureSalt', 'fallbackFormat', 'thumbnailFormat'], 'trim'],
+			[['endpoint', 'signatureKey', 'signatureSalt', 'mode', 'fallbackFormat', 'thumbnailFormat'], 'trim'],
 			[['endpoint'], 'validateEndpoint'],
+			[['mode'], 'validateMode'],
 			[['fallbackFormat', 'thumbnailFormat'], 'validateFormat'],
 			[['signatureKey', 'signatureSalt'], 'validateSignature'],
 		];
@@ -187,11 +229,29 @@ final class Settings extends Model
 		return $errors;
 	}
 
-	private function getSupportedFormat(string $value): ?string
+	/**
+	 * @param list<string> $supported
+	 */
+	private function validateSupported(string $attribute, string $value, array $supported): void
 	{
-		$format = strtolower($this->resolve($value));
+		if ($this->getSupported($value, $supported) === null) {
+			$this->addError($attribute, Craft::t('imgproxy', '{attribute} must be one of: {values}.', [
+				'attribute' => $this->getAttributeLabel($attribute),
+				'values' => implode(', ', $supported),
+			]));
+		}
+	}
 
-		return in_array($format, self::FORMATS, true) ? $format : null;
+	/**
+	 * The resolved value in lowercase, or null when it is not supported.
+	 *
+	 * @param list<string> $supported
+	 */
+	private function getSupported(string $value, array $supported): ?string
+	{
+		$value = strtolower($this->resolve($value));
+
+		return in_array($value, $supported, true) ? $value : null;
 	}
 
 	/**
@@ -216,6 +276,8 @@ final class Settings extends Model
 					'endpoint',
 					'signatureKey',
 					'signatureSalt',
+					'mode',
+					'transforms',
 					'fallbackFormat',
 					'thumbnailFormat',
 					'thumbnails',

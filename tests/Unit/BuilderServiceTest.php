@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use craft\models\ImageTransform;
+use SomehowDigital\Craft\ImgProxy\imagetransforms\ImgproxyTransformer;
 use SomehowDigital\Craft\ImgProxy\Plugin;
 use SomehowDigital\Craft\ImgProxy\Tests\Support\Asset;
 
@@ -15,6 +16,18 @@ use SomehowDigital\Craft\ImgProxy\Tests\Support\Asset;
 function imageUrl(array $transform = [], array $asset = []): string
 {
 	return Plugin::instance()->getBuilder()->getUrl(Asset::image($asset), new ImageTransform($transform));
+}
+
+/**
+ * The imgproxy URL Craft gets for an asset and a transform, with the settings applied. Craft takes an empty transform
+ * for none, so the default one sets the default quality.
+ *
+ * @param array<string,mixed> $transform
+ * @param array<string,mixed> $asset
+ */
+function assetUrl(array $transform = ['quality' => 70], array $asset = []): ?string
+{
+	return Plugin::instance()->getBuilder()->getAssetUrl(Asset::image($asset), $transform);
 }
 
 describe('endpoint', function (): void {
@@ -236,25 +249,29 @@ describe('options', function (): void {
 	});
 
 	it('converts sources that browsers cannot display to JPEG, like Craft', function (string $filename): void {
-		expect(urlOptions(imageUrl(asset: ['filename' => $filename])))->toBe(['q:70', 'f:jpg']);
+		expect(urlOptions(assetUrl(asset: ['filename' => $filename])))->toBe(['q:70', 'f:jpg']);
 	})->with(['image.heic', 'image.tif', 'image.tiff', 'image.bmp', 'IMAGE.HEIC']);
 
 	it('converts sources that browsers cannot display to the fallback format', function (): void {
 		$this->settings(['fallbackFormat' => 'webp']);
 
-		expect(urlOptions(imageUrl(asset: ['filename' => 'image.heic'])))->toBe(['q:70', 'f:webp']);
+		expect(urlOptions(assetUrl(asset: ['filename' => 'image.heic'])))->toBe(['q:70', 'f:webp']);
 	});
 
 	it('keeps the source format of sources that browsers can display', function (string $filename): void {
-		expect(urlOptions(imageUrl(asset: ['filename' => $filename])))->toBe(['q:70']);
+		expect(urlOptions(assetUrl(asset: ['filename' => $filename])))->toBe(['q:70']);
 	})->with(['image.jpg', 'image.jpeg', 'image.png', 'image.gif', 'image.webp', 'image.avif', 'image.svg']);
 
 	it('prefers the format of the transform over the converted one', function (): void {
-		expect(urlOptions(imageUrl(['format' => 'webp'], ['filename' => 'image.heic'])))->toBe(['q:70', 'f:webp']);
+		expect(urlOptions(assetUrl(['format' => 'webp'], ['filename' => 'image.heic'])))->toBe(['q:70', 'f:webp']);
 	});
 
 	it('converts sources that browsers cannot display when the format is empty', function (): void {
-		expect(urlOptions(imageUrl(['format' => ''], ['filename' => 'image.heic'])))->toBe(['q:70', 'f:jpg']);
+		expect(urlOptions(assetUrl(['format' => ''], ['filename' => 'image.heic'])))->toBe(['q:70', 'f:jpg']);
+	});
+
+	it('leaves the format to the transform', function (): void {
+		expect(urlOptions(imageUrl(asset: ['filename' => 'image.heic'])))->toBe(['q:70']);
 	});
 
 	it('leaves out an empty format', function (): void {
@@ -300,6 +317,53 @@ describe('asset URLs', function (): void {
 
 	it('returns null for an asset that is not supported', function (): void {
 		expect(Plugin::instance()->getBuilder()->getAssetUrl(Asset::image(['filename' => 'document.pdf']), ['width' => 300]))->toBeNull();
+	});
+});
+
+describe('stored transforms', function (): void {
+	it("sets the transform for the plugin's transformer", function (): void {
+		$this->settings(['mode' => 'store']);
+		$transform = new ImageTransform(['width' => 300]);
+
+		$stored = Plugin::instance()->getBuilder()->getStoredTransform(Asset::image(), $transform);
+
+		expect($stored?->getTransformer())->toBe(ImgproxyTransformer::class);
+		expect($stored?->width)->toBe(300);
+		expect($stored?->format)->toBeNull();
+		expect($transform->getTransformer())->toBe(ImageTransform::DEFAULT_TRANSFORMER);
+	});
+
+	it('converts sources that browsers cannot display to the fallback format', function (): void {
+		imageFormats(['jpg', 'heic']);
+		$this->settings(['mode' => 'store', 'fallbackFormat' => 'png']);
+
+		expect(Plugin::instance()->getBuilder()->getStoredTransform(Asset::image(['filename' => 'image.heic']), new ImageTransform())?->format)
+			->toBe('png');
+	});
+
+	it('returns null in the proxy mode', function (): void {
+		expect(Plugin::instance()->getBuilder()->getStoredTransform(Asset::image(), new ImageTransform()))->toBeNull();
+	});
+
+	it('returns null when disabled', function (): void {
+		$this->settings(['transforms' => false, 'mode' => 'store']);
+
+		expect(Plugin::instance()->getBuilder()->getStoredTransform(Asset::image(), new ImageTransform()))->toBeNull();
+	});
+
+	it('returns null for files Craft cannot open', function (): void {
+		imageFormats(['jpg']);
+		$this->settings(['mode' => 'store']);
+
+		expect(Plugin::instance()->getBuilder()->getStoredTransform(Asset::image(['filename' => 'image.heic']), new ImageTransform()))->toBeNull();
+	});
+
+	it("returns null for a transform already set for the plugin's transformer", function (): void {
+		$this->settings(['mode' => 'store']);
+		$transform = new ImageTransform();
+		$transform->setTransformer(ImgproxyTransformer::class);
+
+		expect(Plugin::instance()->getBuilder()->getStoredTransform(Asset::image(), $transform))->toBeNull();
 	});
 });
 
